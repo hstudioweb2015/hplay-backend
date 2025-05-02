@@ -9,3 +9,4 @@ export const database = {
 	user: process.env.DB_USER || 'root',
 	password: process.env.DB_PASSWORD || '',
 }
+export const production =  process.env.PRODUCTION === 'true' || false;

@@ -1,9 +1,11 @@
 import mariadb from 'mariadb';
 import { database } from './config.js';
 
+let pool;
+
 export function connectDB() {
 	try {
-		mariadb.createPool({
+		pool = mariadb.createPool({
 			host: database.host,
 			port: database.port,
 			user: database.user,
@@ -15,4 +17,9 @@ export function connectDB() {
 		console.error('Error connecting to the database:', error);
 		process.exit(1);
 	}
+}
+
+export function getConnection() {
+	if (!pool) throw new Error('Database connection pool is not initialized. Call connectDB() first.');
+	return pool.getConnection();
 }
