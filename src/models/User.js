@@ -1,13 +1,18 @@
 export default class User {
-	constructor(firstName, lastName, email, password, isAdmin = false) {
+	constructor(firstName, lastName, email, isAdmin = false) {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.email = email;
-		this.password = password;
 		this.isAdmin = isAdmin;
 	}
 
-	static create(user) {
-		return Promise.resolve(undefined);
+	static async create(user) {
+		return new Promise((resolve, reject) => {
+			// Simulate database operation
+			setTimeout(() => {
+				user.password = undefined;
+				resolve(user);
+			}, 1000);
+		});
 	}
 }
