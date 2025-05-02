@@ -1,30 +1,49 @@
+import ValidationError from "../errors/ValidationError.js";
+
 export default function validateRequest(schema) {
+	
+	// Check if request body exists
 	return (req, res, next) => {
+		if (!req.body || typeof req.body !== "object") {
+			return res.status(400).json({ errors: ["Request body is missing or malformed."] });
+		}
+
 		const errors = [];
 
-		for (const [field, rules] of Object.entries(schema)) {
-			const value = req.body[field];
+		for (const [key, rules] of Object.entries(schema)) {
+			const value = req.body[key];
 
+			// Check if the key is in the schema
 			if (rules.required && (value === undefined || value === null || value === "")) {
-				errors.push(`${field} is required`);
+				errors.push(`${key} is required.`);
 				continue;
 			}
 
+			// Check if the key is in the request body
+			if (value === undefined || value === null) continue;
+
+			// Check type
 			if (rules.type && typeof value !== rules.type) {
-				errors.push(`${field} must be of type ${rules.type}`);
+				errors.push(`${key} must be a ${rules.type}.`);
+				continue;
 			}
 
-			if (rules.format === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-				errors.push(`${field} must be a valid email`);
+			// Check minLength
+			if (rules.minLength && typeof value === "string" && value.length < rules.minLength) {
+				errors.push(`${key} must be at least ${rules.minLength} characters long.`);
 			}
 
-			if (rules.minLength && value && value.length < rules.minLength) {
-				errors.push(`${field} must be at least ${rules.minLength} characters long`);
+			// Check email format
+			if (rules.format === "email" && typeof value === "string") {
+				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+				if (!emailRegex.test(value)) {
+					errors.push(`${key} must be a valid email address.`);
+				}
 			}
 		}
 
 		if (errors.length > 0) {
-			return res.status(400).json({ message: "Validation error", errors });
+			return next(new ValidationError(errors));
 		}
 
 		next();
