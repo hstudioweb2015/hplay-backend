@@ -99,10 +99,10 @@ describe('User Service', () => {
 		// Given
 		const user = createUser();
 		const createdUser = (await UserService.create(user)).user;
+
 		// When
 		const updatedUser = createdUser;
 		updatedUser.firstName = 'Jane';
-
 		const response = await UserService.update(updatedUser);
 
 		// Then
