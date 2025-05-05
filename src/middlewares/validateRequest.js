@@ -7,6 +7,15 @@ export default function validateRequest(schema) {
 		if (!req.body || typeof req.body !== "object") {
 			return res.status(400).json({ errors: ["Request body is missing or malformed."] });
 		}
+		
+		// add params to the request body
+		if (req.params) {
+			for (const [key, value] of Object.entries(req.params)) {
+				if (req.body[key] === undefined) {
+					req.body[key] = value;
+				}
+			}
+		}
 
 		const errors = [];
 

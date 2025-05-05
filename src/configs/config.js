@@ -10,3 +10,5 @@ export const database = {
 	password: process.env.DB_PASSWORD || '',
 }
 export const production =  process.env.PRODUCTION === 'true' || false;
+export const jwtSecret = process.env.JWT_SECRET || '';
+export const jwtExpiration = process.env.JWT_EXPIRATION || '12h';

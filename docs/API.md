@@ -20,6 +20,11 @@ Authentication is required for most endpoints and uses JWT tokens. Include the t
     - Body: `{ "firstName": string, "lastName": string, "email": string, "password": string }`
     - Returns: `{ "token": string, "user": User }`
 
+### Update
+- **PUT** `/auth/update`
+    - Body: `{ "id": int, "firstName": string, "lastName": string, "email": string, "password": string }`
+    - Returns: `{ "user": User }`
+
 ### Media
 #### Get All Media
 - **GET** `/media`
