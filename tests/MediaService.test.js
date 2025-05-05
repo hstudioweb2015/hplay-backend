@@ -48,7 +48,7 @@ describe('Media Service', () => {
 		const media = getMedia();
 
 		// When
-		const response = await MediaService.search(name, limit, page, tags);
+		const response = await MediaService.search({name, limit, page, tags});
 		// Then
 		expect(response).toHaveProperty('total', 1);
 		expect(response).toHaveProperty('page', 1);
@@ -66,7 +66,7 @@ describe('Media Service', () => {
 		const tags = ['nonExistingTag'];
 
 		// When
-		const response = await MediaService.search(name, limit, page, tags);
+		const response = await MediaService.search({name, limit, page, tags});
 
 		// Then
 		expect(response).toHaveProperty('total', 0);
@@ -82,7 +82,7 @@ describe('Media Service', () => {
 		const media = getMedia();
 
 		// When
-		const response = await MediaService.get(id);
+		const response = await MediaService.get({id});
 
 		// Then
 		expect(response).toHaveProperty('id', media.id);

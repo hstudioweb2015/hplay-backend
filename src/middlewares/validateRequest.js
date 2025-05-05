@@ -1,13 +1,18 @@
 import ValidationError from "../errors/ValidationError.js";
 
 export default function validateRequest(schema) {
-	
+
 	// Check if request body exists
 	return (req, res, next) => {
 		if (!req.body || typeof req.body !== "object") {
-			return res.status(400).json({ errors: ["Request body is missing or malformed."] });
+			//check if one rule is required
+			if (Object.values(schema).some(rule => rule.required)) {
+				return res.status(400).json({errors: ["Request body is missing or malformed."]});
+			} else {
+				return next();
+			}
 		}
-		
+
 		// add params to the request body
 		if (req.params) {
 			for (const [key, value] of Object.entries(req.params)) {
