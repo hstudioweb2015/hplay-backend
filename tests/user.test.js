@@ -23,28 +23,28 @@ describe('User Service', () => {
 	it('should create a user', async () => {
 		// Given
 		const user = createUser();
-		
+
 		// When
 		const response = await UserService.create(user);
-		
+
 		// Then
 		expect(response).toHaveProperty('jwtToken');
-		expect(response).toHaveProperty('id');
-		expect(response).toHaveProperty('firstName', user.firstName);
-		expect(response).toHaveProperty('lastName', user.lastName);
-		expect(response).toHaveProperty('email', user.email);
+		expect(response.user).toHaveProperty('id');
+		expect(response.user).toHaveProperty('firstName', user.firstName);
+		expect(response.user).toHaveProperty('lastName', user.lastName);
+		expect(response.user).toHaveProperty('email', user.email);
 	});
 
 	it('should not create a user with an existing email', async () => {
 		// Given
 		const user = createUser();
 		await UserService.create(user);
-		
+
 		// When
 		const response = UserService.create(user);
-		
+
 		// Then
-		await expect(response).rejects.toThrow('Database operation failed.');
+		await expect(response).rejects.toThrow('User operation failed.');
 		await expect(response).rejects.toHaveProperty('status', 409);
 		await expect(response).rejects.toHaveProperty('messages', 'email already exists');
 	});
@@ -53,42 +53,44 @@ describe('User Service', () => {
 		// Given
 		const user = createUser();
 		await UserService.create(user);
-		
+
 		// When
-		const response = await UserService.login(user.email, user.password);
-		
+		const response = await UserService.login(user);
+
 		// Then
 		expect(response).toHaveProperty('jwtToken');
-		expect(response).toHaveProperty('id');
-		expect(response).toHaveProperty('firstName', user.firstName);
-		expect(response).toHaveProperty('lastName', user.lastName);
-		expect(response).toHaveProperty('email', user.email);
+		expect(response.user).toHaveProperty('id');
+		expect(response.user).toHaveProperty('firstName', user.firstName);
+		expect(response.user).toHaveProperty('lastName', user.lastName);
+		expect(response.user).toHaveProperty('email', user.email);
 	});
-	
+
 	it('should not login a user with wrong password', async () => {
 		// Given
 		const user = createUser();
 		await UserService.create(user);
-		
+		user.password = 'wrongpassword';
+
 		// When
-		const response = UserService.login(user.email, 'wrongpassword');
-		
+		const response = UserService.login(user);
+
 		// Then
-		await expect(response).rejects.toThrow('Database operation failed.');
+		await expect(response).rejects.toThrow('User operation failed.');
 		await expect(response).rejects.toHaveProperty('status', 401);
 		await expect(response).rejects.toHaveProperty('messages', 'Invalid email or password');
 	});
-	
+
 	it('should not login a user with non-existing email', async () => {
 		// Given
 		const user = createUser();
 		await UserService.create(user);
-		
+		user.email = 'nonexisting@test.test';
+
 		// When
-		const response = UserService.login(user.email, user.password);
-		
+		const response = UserService.login(user);
+
 		// Then
-		await expect(response).rejects.toThrow('Database operation failed.');
+		await expect(response).rejects.toThrow('User operation failed.');
 		await expect(response).rejects.toHaveProperty('status', 401);
 		await expect(response).rejects.toHaveProperty('messages', 'Invalid email or password');
 	});
@@ -96,14 +98,13 @@ describe('User Service', () => {
 	it('should update a user', async () => {
 		// Given
 		const user = createUser();
-		const createdUser = await UserService.create(user);
-		
+		const createdUser = (await UserService.create(user)).user;
 		// When
 		const updatedUser = createdUser;
 		updatedUser.firstName = 'Jane';
-		
+
 		const response = await UserService.update(updatedUser);
-		
+
 		// Then
 		expect(response).toHaveProperty('id', createdUser.id);
 		expect(response).toHaveProperty('firstName', updatedUser.firstName);
