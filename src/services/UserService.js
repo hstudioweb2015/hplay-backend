@@ -15,13 +15,21 @@ export default class UserService {
 			const sql = `INSERT INTO users (firstName, lastName, email, password)
                    VALUES (?, ?, ?, ?)`;
 			const params = [firstName, lastName, email, password];
-			await DBService.query(sql, params);
-			return new User(firstName, lastName, email);
+			const id = await DBService.query(sql, params, true);
+			return new User(id, firstName, lastName, email);
 		} catch (error) {
 			if (error.code === "ER_DUP_ENTRY") {
 				throw new DBError("email already exists", 409);
 			}
 			throw error;
 		}
+	}
+
+	static async login(email, password) {
+		throw new Error("Not implemented");
+	}
+
+	static async update(user) {
+		throw new Error("Not implemented");
 	}
 }

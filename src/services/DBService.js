@@ -2,11 +2,14 @@ import {getConnection} from "../configs/db.js";
 import AppError from "../errors/AppError.js";
 
 export default class DBService {
-	static async query(sql, params) {
+	static async query(sql, params, returnInsertId = false) {
 		try {
 			const connection = await getConnection();
 			try {
-				return await connection.query(sql, params);
+				const result = await connection.query(sql, params);
+				if (returnInsertId) {
+					return result.insertId;
+				}
 			} finally {
 				connection.release();
 			}
