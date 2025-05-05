@@ -4,19 +4,21 @@ import DBService from "../src/services/DBService.js";
 
 function getMedia() {
 	return {
+		id: 1,
 		name: 'exampleName',
 		description: 'exampleDescription',
 		price: 100,
-		share_id: 1,
+		shareId: "aaa-bbbb-cccc-dddd",
 		tags: ['exampleTag']
 	};
 }
 
 beforeEach(async () => {
 	await connectDB();
+	const media = getMedia();
 	await DBService.query(
 			'INSERT INTO medias (id, name, description, price, share_id) VALUES (?, ?, ?, ?, ?)',
-			[1, 'exampleName', 'exampleDescription', 100, 1],
+			[1, media.name, media.description, media.price, media.shareId],
 			true
 	);
 	await DBService.query(
@@ -87,7 +89,7 @@ describe('Media Service', () => {
 		expect(response).toHaveProperty('name', media.name);
 		expect(response).toHaveProperty('description', media.description);
 		expect(response).toHaveProperty('price', media.price);
-		expect(response).toHaveProperty('share_id', media.share_id);
+		expect(response).toHaveProperty('shareId', media.shareId);
 		expect(response).toHaveProperty('tags');
 		expect(response.tags).toEqual(media.tags);
 	});
@@ -100,6 +102,8 @@ describe('Media Service', () => {
 		const response = MediaService.get(id);
 
 		// Then
-		await expect(response).rejects.toThrow('Media not found');
+		await expect(response).rejects.toThrow('Media operation failed.');
+		await expect(response).rejects.toHaveProperty('status', 404);
+		await expect(response).rejects.toHaveProperty('messages', 'Media not found');
 	});
 });
