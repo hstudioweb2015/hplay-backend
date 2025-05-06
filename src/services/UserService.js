@@ -31,7 +31,7 @@ export default class UserService {
 	}
 
 	static async login({email, password}) {
-		const sql = `SELECT id, firstName, lastName, email, is_admin
+		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin
                  FROM users
                  WHERE email = ?
                    AND password = ?`;
@@ -47,6 +47,19 @@ export default class UserService {
 			"jwtToken": jwtToken,
 			"user": user
 		};
+	}
+	
+	static async getById({id}) {
+		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin
+								 FROM users
+								 WHERE id = ?`;
+		const params = [id];
+		const result = await DBService.query(sql, params);
+		if (result.length === 0) {
+			throw new UserError("User does not exist", 401);
+		}
+		const {firstName, lastName, email, isAdmin} = result[0];
+		return new User(id, firstName, lastName, email, isAdmin);
 	}
 
 	static async update({id, firstName, lastName, email, password = null}) {
@@ -71,6 +84,15 @@ export default class UserService {
 			throw error;
 		}
 	}
+	
+	static async delete({id}) {
+		await UserService.userExist(id);
+		const sql = `DELETE FROM users
+								 WHERE id = ?`;
+		const params = [id];
+		await DBService.query(sql, params);
+		return {message: "User deleted"};
+	}
 
 	static async userExist(id) {
 		const sql = `SELECT id
@@ -80,16 +102,6 @@ export default class UserService {
 		const result = await DBService.query(sql, params);
 		if (result.length === 0) {
 			throw new UserError("User does not exist", 401);
-		}
-		return true;
-	}
-
-	static async updateAuthorizationCheck(id, user) {
-		if (user.isAdmin) {
-			return true;
-		}
-		if (user.id !== id) {
-			throw new UserError("You are not authorized to update this user", 401);
 		}
 		return true;
 	}

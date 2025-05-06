@@ -23,6 +23,14 @@ router.post("/login",
 		UserController.loginUser
 );
 
+router.get("/:id",
+		authenticateToken,
+		validateRequest({
+			id: {type: "string", required: true}
+		}),
+		UserController.getUserById
+);
+
 router.put("/:id",
 		authenticateToken,
 		validateRequest({
@@ -33,6 +41,14 @@ router.put("/:id",
 			password: {type: "string", required: false, minLength: 6}
 		}),
 		UserController.updateUser
+);
+
+router.delete("/:id",
+		authenticateToken,
+		validateRequest({
+			id: {type: "string", required: true}
+		}),
+		UserController.deleteUser
 );
 
 export default router;

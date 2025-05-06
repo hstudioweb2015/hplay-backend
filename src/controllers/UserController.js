@@ -1,4 +1,5 @@
 import UserService from "../services/UserService.js";
+import UserError from "../errors/UserError.js";
 
 export default class UserController {
 	/**
@@ -27,12 +28,33 @@ export default class UserController {
 			next(error);
 		}
 	}
+	
+	static async getUserById(req, res, next) {
+		try {
+			if (req.user.id !== req.body.id && !req.user.isAdmin) next(new UserError("Unauthorized", 401));
+			let response = await UserService.getById(req.body);
+			response.id = response.id.toString();
+			res.status(200).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
 
 	static async updateUser(req, res, next) {
-		await UserService.updateAuthorizationCheck(req.params.id, req.user);
+		if (req.user.id !== req.body.id && !req.user.isAdmin) next(new UserError("Unauthorized", 401));
 		try {
 			let response = await UserService.update(req.body);
 			response.id = response.id.toString();
+			res.status(200).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
+	
+	static async deleteUser(req, res, next) {
+		if (req.user.id !== req.body.id && !req.user.isAdmin) next(new UserError("Unauthorized", 401));
+		try {
+			let response = await UserService.delete(req.body);
 			res.status(200).json(response);
 		} catch (error) {
 			next(error);
