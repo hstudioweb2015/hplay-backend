@@ -1,0 +1,330 @@
+swagger: "2.0"
+info:
+    title: HPlay API
+    description: HPlay API documentation
+    version: 0.0.1
+
+basePath: /v1
+tags:
+    -   name: User
+        description: User operations
+    -   name: Media
+        description: Media operations
+securityDefinitions: 
+    Bearer:
+        type: apiKey
+        name: Authorization
+        in: header
+paths:
+    /user/register:
+        post:
+            tags:
+                - User
+            summary: Register a new user
+            description: This endpoint allows you to register a new user.
+            parameters:
+                -   name: body
+                    in: body
+                    required: true
+                    schema:
+                        $ref: '#/definitions/RegisterRequest'
+            responses:
+                200:
+                    description: User registered successfully
+                    schema:
+                        $ref: '#/definitions/UserResponse'
+                400:
+                    description: Bad request
+                409:
+                    description: Conflict
+                500:
+                    description: Internal server error
+    /user/login:
+        post:
+            tags:
+                - User
+            summary: Login a user
+            description: This endpoint allows you to login a user.
+            parameters:
+                -   name: body
+                    in: body
+                    required: true
+                    schema:
+                        $ref: '#/definitions/LoginRequest'
+            responses:
+                200:
+                    description: User logged in successfully
+                    schema:
+                        $ref: '#/definitions/UserResponse'
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                500:
+                    description: Internal server error
+    /user/{id}:
+        get:
+            tags:
+                - User
+            summary: Get user information
+            description: This endpoint allows you to get user information.
+            parameters:
+                -   name: id
+                    in: path
+                    required: true
+                    type: integer
+                    description: The unique identifier of the user.
+            responses:
+                200:
+                    description: User found successfully
+                    schema:
+                        $ref: '#/definitions/user'
+                401:
+                    description: Unauthorized
+                500:
+                    description: Internal server error
+            security:
+                - Bearer: []
+        put:
+            tags:
+                - User
+            summary: Update user information
+            description: This endpoint allows you to update user information.
+            parameters:
+                -   name: id
+                    in: path
+                    required: true
+                    type: integer
+                    description: The unique identifier of the user.
+                -   name: body
+                    in: body
+                    required: true
+                    schema:
+                        $ref: '#/definitions/RegisterRequest'
+            responses:
+                200:
+                    description: User updated successfully
+                    schema:
+                        $ref: '#/definitions/UserResponse'
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                500:
+                    description: Internal server error
+            security:
+                - Bearer: []
+        delete: 
+            tags:
+                - User
+            summary: Delete a user
+            description: This endpoint allows you to delete a user.
+            parameters:
+                -   name: id
+                    in: path
+                    required: true
+                    type: integer
+                    description: The unique identifier of the user.
+            responses:
+                200:
+                    description: User deleted successfully
+                401:
+                    description: Unauthorized
+                500:
+                    description: Internal server error
+            security:
+                - Bearer: []
+        
+    /media/search:
+        post:
+            tags:
+                - Media
+            summary: Search for media
+            description: This endpoint allows you to search for media.
+            parameters:
+                -   name: body
+                    in: body
+                    required: true
+                    schema:
+                        $ref: '#/definitions/SearchMediaRequest'
+            responses:
+                200:
+                    description: Media found successfully
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/definitions/SearchMediaResponse'
+                400:
+                    description: Bad request
+                500:
+                    description: Internal server error
+            security:
+                - Bearer: []
+    /media/{id}:
+        get:
+            tags:
+                - Media
+            summary: Get media by ID
+            description: This endpoint allows you to get media by its ID.
+            parameters:
+                -   name: id
+                    in: path
+                    required: true
+                    type: integer
+                    description: The unique identifier of the media.
+            responses:
+                200:
+                    description: Media found successfully
+                    schema:
+                        $ref: '#/definitions/Media'
+                400:
+                    description: Bad request
+                404:
+                    description: Media not found
+                500:
+                    description: Internal server error
+            security:
+                - Bearer: []
+
+definitions:
+    Media:
+        type: object
+        properties:
+            id:
+                type: string
+                description: The unique identifier of the media.
+            name:
+                type: string
+                description: The name of the media.
+            description:
+                type: string
+                description: A brief description of the media.
+            price:
+                type: number
+                format: float
+                description: The price of the media.
+            shareId:
+                type: string
+                description: The unique identifier of the share.
+            tags:
+                type: array
+                items:
+                    type: string
+                description: The tags associated with the media.
+    user:
+        type: object
+        properties:
+            id:
+                type: string
+                description: The unique identifier of the user.
+            email:
+                type: string
+                format: email
+                description: The email of the user.
+            firstName:
+                type: string
+                description: The firstname of the user.
+            lastName:
+                type: string
+                description: The lastname of the user.
+            isAdmin:
+                type: boolean
+                description: Whether the user is an admin or not.
+    RegisterRequest:
+        type: object
+        properties:
+            email:
+                type: string
+                format: email
+                description: The email of the user.
+                required: true
+            password:
+                type: string
+                format: password
+                description: The password of the user (6 characters minimum).
+                required: true
+            firstName:
+                type: string
+                description: The firstname of the user.
+                required: true
+            lastName:
+                type: string
+                description: The lastname of the user.
+                required: true
+    LoginRequest:
+        type: object
+        properties:
+            email:
+                type: string
+                format: email
+                description: The email of the user.
+                required: true
+            password:
+                type: string
+                format: password
+                description: The password of the user (6 characters minimum).
+                required: true
+    SearchMediaRequest:
+        type: object
+        properties:
+            name:
+                type: string
+                description: The name of the media to search for.
+                required: false
+            limit:
+                type: integer
+                description: The maximum number of results to return.
+                example: 10
+                required: false
+            page:
+                type: integer
+                description: The page number to return.
+                example: 1
+                required: false
+            tags:
+                type: array
+                items:
+                    type: string
+                description: The tags to filter the media by.
+                required: false
+    SearchMediaResponse:
+        type: object
+        properties:
+            total:
+                type: integer
+                description: The total number of media found.
+                example: 100
+            startAt:
+                type: integer
+                description: The starting index of the media found.
+                example: 1
+            limit:
+                type: integer
+                description: The maximum number of results returned.
+                example: 10
+            medias:
+                type: array
+                items:
+                    $ref: '#/definitions/Media'
+    GetMediaRequest:
+        type: object
+        properties:
+            id:
+                type: string
+                description: The unique identifier of the media.
+    UserResponse:
+        type: object
+        properties:
+            jwtToken:
+                type: object
+                properties:
+                    token:
+                        type: string
+                        description: The JWT token for the user.
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    expire:
+                        type: integer
+                        description: The timestamp when the token expires.
+                        example: 1746560493
+            user:
+                $ref: '#/definitions/user'
