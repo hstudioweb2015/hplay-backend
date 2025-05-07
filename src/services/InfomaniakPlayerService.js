@@ -4,6 +4,11 @@ import {DateTime} from "luxon";
 
 export default class InfomaniakPlayerService extends PlayerService {
 
+	/**
+	 * Generate an embed URL for the Infomaniak player
+	 * @param shareId {String} - The share ID of the media
+	 * @returns {Promise<string>}
+	 */
 	static async generateEmbedUrl(shareId) {
 		const endTime = DateTime.fromMillis(
 				Math.floor(Date.now()) + (infomaniak.tokenDuration * 60000),
