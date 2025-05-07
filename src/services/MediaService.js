@@ -4,6 +4,15 @@ import InfomaniakPlayerService from "./InfomaniakPlayerService.js";
 import Media from "../models/Media.js";
 
 export default class MediaService {
+
+	/**
+	 * Creates a new media in the database
+	 * @param name {String} - Media name
+	 * @param limit {Integer} - Number of results per page
+	 * @param page {Integer} - Page number
+	 * @param tags {Array} - Array of tags
+	 * @returns {Promise<{total: number, startAt: number, page: number, limit: number, medias: Array<Media>}>}
+	 */
 	static async search({name = "", limit = 10, page = 1, tags = []} = {}) {
 		const hasTags = tags.length > 0;
 		const sql = `SELECT m.id, m.name, m.description, m.price, m.share_id as shareId, GROUP_CONCAT(t.name) as tags
@@ -54,7 +63,12 @@ export default class MediaService {
 		};
 	}
 
-	static async get(id) {
+	/**
+	 * Get a media by id
+	 * @param id {Integer} - Media id
+	 * @returns {Promise<Media>} - Media object
+	 */
+	static async get({id}) {
 		const sql = `SELECT m.id, m.name, m.description, m.price, m.share_id as shareId, GROUP_CONCAT(t.name) as tags
                  FROM medias m
                           LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
@@ -74,6 +88,12 @@ export default class MediaService {
 		return result;
 	}
 
+	/**
+	 * Request a url with unique token to play a media
+	 * @param id {Integer} - Media id
+	 * @param user {User} - User object
+	 * @returns {Promise<{url: string}>} - url to play the media with unique token
+	 */
 	static async play({id}, user) {
 		await MediaService.checkUserCanPlay(id, user);
 		const sql = `SELECT share_id as shareId
@@ -86,6 +106,12 @@ export default class MediaService {
 		}
 	}
 
+	/**
+	 * Check if user can play the media
+	 * @param mediaId {Integer} - Media id
+	 * @param user {User} - User object
+	 * @returns {Promise<boolean>}
+	 */
 	static async checkUserCanPlay(mediaId, user) {
 		if (user.isAdmin) return true;
 		const sql = `SELECT COUNT(*) as count
