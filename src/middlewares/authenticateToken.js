@@ -2,6 +2,13 @@ import jwt from "jsonwebtoken";
 import {jwtSecret} from "../configs/config.js";
 import UserError from "../errors/UserError.js";
 
+/**
+ * Middleware to authenticate token
+ * @description This middleware checks if the Bearer token is present in the request headers
+ * @param req
+ * @param res
+ * @param next
+ */
 export default function authenticateToken(req, res, next) {
 	const authHeader = req.headers["authorization"] || req.headers["Authorization"];
 	if (authHeader == null) next(new UserError("No token provided", 401));
