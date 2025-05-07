@@ -1,10 +1,15 @@
 import ValidationError from "../errors/ValidationError.js";
 
+/**
+ * Middleware to validate request body
+ * @description This middleware checks if the request body matches the schema
+ * @param schema {{parameterName: {type: string, required: boolean, minLength: number, format: string}}} - The schema to validate against
+ */
 export default function validateRequest(schema) {
 
 	// Check if request body exists
 	return (req, res, next) => {
-		
+
 		// add params to the request body
 		if (req.params) {
 			if (!req.body) req.body = {};
@@ -14,7 +19,7 @@ export default function validateRequest(schema) {
 				}
 			}
 		}
-		
+
 		// Check if request body is an object
 		if (!req.body || typeof req.body !== "object") {
 			//check if one rule is required
