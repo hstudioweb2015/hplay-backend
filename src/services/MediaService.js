@@ -8,8 +8,8 @@ export default class MediaService {
                  FROM medias m
                           LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
                           LEFT JOIN tags t ON mt.tag_id = t.id
-                 WHERE (m.name LIKE ? OR ? IS NULL)
-                     ${hasTags ? "AND (t.name IN (?))" : ""}
+                 WHERE (m.name LIKE ? OR ? IS NULL) ${hasTags ? "AND (t.name IN (?))" : ""}
+                 	AND m.available = 1
                  GROUP BY m.id
                  ORDER BY m.name
                  LIMIT ? OFFSET ?`;
@@ -31,6 +31,7 @@ export default class MediaService {
                                     LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
                                     LEFT JOIN tags t ON mt.tag_id = t.id
                            WHERE (m.name LIKE ? OR ? IS NULL)
+                             AND m.available = 1
                                ${hasTags ? "AND (t.name IN (?))" : ""}`;
 		const totalCountParams = [`%${name}%`, name];
 		if (hasTags) {
@@ -54,6 +55,7 @@ export default class MediaService {
                           LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
                           LEFT JOIN tags t ON mt.tag_id = t.id
                  WHERE m.id = ?
+                   AND m.available = 1
                  GROUP BY m.id`;
 		const params = [id];
 		let result = await DBService.query(sql, params);
