@@ -5,6 +5,7 @@ import authenticateToken from "../middlewares/authenticateToken.js";
 
 const router = express.Router();
 
+// Search for medias
 router.post("/search",
 		authenticateToken,
 		validateRequest({
@@ -16,6 +17,7 @@ router.post("/search",
 		MediaController.searchMedia
 );
 
+// Get media by id
 router.get("/:id",
 		authenticateToken,
 		validateRequest({
@@ -24,6 +26,7 @@ router.get("/:id",
 		MediaController.getMediaById
 );
 
+// Request a url with unique token to play a media
 router.get("/:id/play",
 		authenticateToken,
 		validateRequest({
