@@ -3,7 +3,7 @@ import UserError from "../errors/UserError.js";
 
 export default class UserController {
 	/**
-	 * Creates a new user.
+	 * Creates a new user
 	 * @param req
 	 * @param res
 	 * @param next
@@ -19,6 +19,13 @@ export default class UserController {
 		}
 	}
 
+	/**
+	 * Login a user
+	 * @param req
+	 * @param res
+	 * @param next
+	 * @returns {Promise<void>}
+	 */
 	static async loginUser(req, res, next) {
 		try {
 			let response = await UserService.login(req.body);
@@ -28,7 +35,14 @@ export default class UserController {
 			next(error);
 		}
 	}
-	
+
+	/**
+	 * Get user by id
+	 * @param req
+	 * @param res
+	 * @param next
+	 * @returns {Promise<void>}
+	 */
 	static async getUserById(req, res, next) {
 		try {
 			if (req.user.id !== req.body.id && !req.user.isAdmin) next(new UserError("Unauthorized", 401));
@@ -40,6 +54,13 @@ export default class UserController {
 		}
 	}
 
+	/**
+	 * Update user
+	 * @param req
+	 * @param res
+	 * @param next
+	 * @returns {Promise<void>}
+	 */
 	static async updateUser(req, res, next) {
 		if (req.user.id !== req.body.id && !req.user.isAdmin) next(new UserError("Unauthorized", 401));
 		try {
@@ -50,7 +71,14 @@ export default class UserController {
 			next(error);
 		}
 	}
-	
+
+	/**
+	 * Delete user
+	 * @param req
+	 * @param res
+	 * @param next
+	 * @returns {Promise<void>}
+	 */
 	static async deleteUser(req, res, next) {
 		if (req.user.id !== req.body.id && !req.user.isAdmin) next(new UserError("Unauthorized", 401));
 		try {
