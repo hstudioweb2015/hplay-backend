@@ -1,11 +1,12 @@
 import DBService from "./DBService.js";
 import MediaError from "../errors/MediaError.js";
 import InfomaniakPlayerService from "./InfomaniakPlayerService.js";
+import Media from "../models/Media.js";
 
 export default class MediaService {
 	static async search({name = "", limit = 10, page = 1, tags = []} = {}) {
 		const hasTags = tags.length > 0;
-		const sql = `SELECT m.id, m.name, m.description, m.price, m.share_id, GROUP_CONCAT(t.name) as tags
+		const sql = `SELECT m.id, m.name, m.description, m.price, m.share_id as shareId, GROUP_CONCAT(t.name) as tags
                  FROM medias m
                           LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
                           LEFT JOIN tags t ON mt.tag_id = t.id
@@ -22,10 +23,13 @@ export default class MediaService {
 
 		const result = await DBService.query(sql, params);
 
-		const medias = result.map(media => ({
+		let medias = result.map(media => ({
 			...media,
 			tags: media.tags ? media.tags.split(',') : []
 		}));
+
+		medias = medias.map(media => Object.assign(new Media(), media));
+
 
 		const totalCountSql = `SELECT COUNT(DISTINCT m.id) as total
                            FROM medias m
@@ -63,7 +67,7 @@ export default class MediaService {
 		if (result.length === 0) {
 			throw new MediaError("Media not found", 404);
 		}
-		result = result[0];
+		result = Object.assign(new Media(), result[0]);
 		if (!(result.tags instanceof Array)) {
 			result.tags = [result.tags];
 		}
