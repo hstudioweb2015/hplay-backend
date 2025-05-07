@@ -24,4 +24,12 @@ router.get("/:id",
 		MediaController.getMediaById
 );
 
+router.get("/:id/play",
+		authenticateToken,
+		validateRequest({
+			id: {type: "string", required: true},
+		}),
+		MediaController.playMedia
+);
+
 export default router;

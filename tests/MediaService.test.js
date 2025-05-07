@@ -106,4 +106,25 @@ describe('Media Service', () => {
 		await expect(response).rejects.toHaveProperty('status', 404);
 		await expect(response).rejects.toHaveProperty('messages', 'Media not found');
 	});
+
+	it('should generate a media embed URL', async () => {
+		// Given
+		const shareId = 'aaa-bbbb-cccc-dddd';
+		const expectedUrl = `https://player.vod2.infomaniak.com/embed/${shareId}?token=`;
+		// Mock the fetch function
+		global.fetch = jest.fn(() =>
+				Promise.resolve({
+					ok: true,
+					json: () => Promise.resolve({data: 'token=exampleToken'}),
+				})
+		);
+		MediaService.checkUserCanPlay = jest.fn(() => Promise.resolve(true));
+
+		// When
+		const response = await MediaService.play({id: 1}, 1);
+
+		// Then
+		expect(response).toHaveProperty('url');
+
+	});
 });

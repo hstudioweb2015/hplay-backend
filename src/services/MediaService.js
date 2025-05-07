@@ -1,5 +1,6 @@
 import DBService from "./DBService.js";
 import MediaError from "../errors/MediaError.js";
+import InfomaniakPlayerService from "./InfomaniakPlayerService.js";
 
 export default class MediaService {
 	static async search({name = "", limit = 10, page = 1, tags = []} = {}) {
@@ -67,5 +68,34 @@ export default class MediaService {
 			result.tags = [result.tags];
 		}
 		return result;
+	}
+
+	static async play({id}, user) {
+		await MediaService.checkUserCanPlay(id, user);
+		const sql = `SELECT share_id as shareId
+                 FROM medias
+                 WHERE id = ?`;
+		const params = [id];
+		const result = await DBService.query(sql, params);
+		return {
+			url: await InfomaniakPlayerService.generateEmbedUrl(result[0].shareId),
+		}
+	}
+
+	static async checkUserCanPlay(mediaId, user) {
+		if (user.isAdmin) return true;
+		const sql = `SELECT COUNT(*) as count
+                 FROM medias_has_users
+                          JOIN medias m ON medias_has_users.media_id = m.id
+                 WHERE m.available = 1
+                   AND user_id = ?
+                   AND media_id = ?`;
+		const params = [user.id, mediaId];
+		const result = await DBService.query(sql, params);
+		console.log(result);
+		if (result[0].count == 0) {
+			throw new MediaError("User cannot play this media", 403);
+		}
+		return true;
 	}
 }
