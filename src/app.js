@@ -9,11 +9,9 @@ import YAML from 'yamljs';
 import {fileURLToPath} from 'url';
 import path from 'path';
 
-
-const swaggerDocument = YAML.load(path.join(path.dirname(fileURLToPath(import.meta.url)), '../swagger.yaml'));
-
 const app = express();
 
+// Middleware
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
@@ -25,12 +23,13 @@ app.use(logger);
 app.use('/v1', routes);
 
 // Swagger, load swagger.yaml file
+const swaggerDocument = YAML.load(path.join(path.dirname(fileURLToPath(import.meta.url)), '../swagger.yaml'));
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
 	explorer: true,
 	customCss: '.swagger-ui .topbar { display: none }',
-	}));
-	
+}));
 
+// error handling
 app.use(errorHandler);
 
 export default app;

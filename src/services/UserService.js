@@ -5,10 +5,12 @@ import UserError from "../errors/UserError.js";
 export default class UserService {
 
 	/**
-	 * Creates a new user in the database
-	 * @param data
-	 * @returns {Promise<{jwtToken: (*), user: User}>} The created user object.
-
+	 * Creates a new user
+	 * @param firstName {String} - User first name
+	 * @param lastName {String} - User last name
+	 * @param email {String} - User email
+	 * @param password {String} - User password
+	 * @returns {Promise<{jwtToken: {token: string, expire: number}, user: User}>}
 	 */
 	static async create({firstName, lastName, email, password}) {
 		try {
@@ -30,6 +32,12 @@ export default class UserService {
 		}
 	}
 
+	/**
+	 * Login a user
+	 * @param email {String} - User email
+	 * @param password {String} - User password
+	 * @returns {Promise<{jwtToken: {token: string, expire: number}, user: User}>}
+	 */
 	static async login({email, password}) {
 		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin
                  FROM users
@@ -48,11 +56,16 @@ export default class UserService {
 			"user": user
 		};
 	}
-	
+
+	/**
+	 * Get user by id
+	 * @param id {Integer} - User id
+	 * @returns {Promise<User>}
+	 */
 	static async getById({id}) {
 		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin
-								 FROM users
-								 WHERE id = ?`;
+                 FROM users
+                 WHERE id = ?`;
 		const params = [id];
 		const result = await DBService.query(sql, params);
 		if (result.length === 0) {
@@ -62,6 +75,15 @@ export default class UserService {
 		return new User(id, firstName, lastName, email, isAdmin);
 	}
 
+	/**
+	 * Update user
+	 * @param id {Integer} - User id
+	 * @param firstName {String} - User first name
+	 * @param lastName {String} - User last name
+	 * @param email {String} - User email
+	 * @param password {String} - User password
+	 * @returns {Promise<User>}
+	 */
 	static async update({id, firstName, lastName, email, password = null}) {
 		await UserService.userExist(id);
 		try {
@@ -84,16 +106,27 @@ export default class UserService {
 			throw error;
 		}
 	}
-	
+
+	/**
+	 * Delete user
+	 * @param id {Integer} - User id
+	 * @returns {Promise<{message: string}>}
+	 */
 	static async delete({id}) {
 		await UserService.userExist(id);
-		const sql = `DELETE FROM users
-								 WHERE id = ?`;
+		const sql = `DELETE
+                 FROM users
+                 WHERE id = ?`;
 		const params = [id];
 		await DBService.query(sql, params);
 		return {message: "User deleted"};
 	}
 
+	/**
+	 * Check if user exists
+	 * @param id {Integer} - User id
+	 * @returns {Promise<boolean>}
+	 */
 	static async userExist(id) {
 		const sql = `SELECT id
                  FROM users

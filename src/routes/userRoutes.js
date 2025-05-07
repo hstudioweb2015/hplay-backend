@@ -5,6 +5,7 @@ import authenticateToken from "../middlewares/authenticateToken.js";
 
 const router = express.Router();
 
+// register a new user
 router.post("/register",
 		validateRequest({
 			firstName: {type: "string", required: true},
@@ -15,6 +16,7 @@ router.post("/register",
 		UserController.createUser
 );
 
+// login a user
 router.post("/login",
 		validateRequest({
 			email: {type: "string", required: true, format: "email"},
@@ -23,6 +25,7 @@ router.post("/login",
 		UserController.loginUser
 );
 
+// get user by id
 router.get("/:id",
 		authenticateToken,
 		validateRequest({
@@ -31,6 +34,7 @@ router.get("/:id",
 		UserController.getUserById
 );
 
+// update user
 router.put("/:id",
 		authenticateToken,
 		validateRequest({
@@ -43,6 +47,7 @@ router.put("/:id",
 		UserController.updateUser
 );
 
+// delete user
 router.delete("/:id",
 		authenticateToken,
 		validateRequest({

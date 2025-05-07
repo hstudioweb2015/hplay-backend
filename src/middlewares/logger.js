@@ -1,8 +1,15 @@
 import * as fs from "node:fs";
 
-export default function logger (req, res, next) {
+/**
+ * Middleware to log requests
+ * @description This middleware logs the request method, URL, and response time to a file
+ * @param req
+ * @param res
+ * @param next
+ */
+export default function logger(req, res, next) {
 	const start = Date.now();
-	const { method, url } = req;
+	const {method, url} = req;
 	res.on('finish', () => {
 		const duration = Date.now() - start;
 		const message = `${method} ${url} ${res.statusCode} - ${duration}ms`;

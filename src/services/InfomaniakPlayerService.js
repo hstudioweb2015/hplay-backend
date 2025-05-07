@@ -4,12 +4,16 @@ import {DateTime} from "luxon";
 
 export default class InfomaniakPlayerService extends PlayerService {
 
+	/**
+	 * Generate an embed URL for the Infomaniak player
+	 * @param shareId {String} - The share ID of the media
+	 * @returns {Promise<string>}
+	 */
 	static async generateEmbedUrl(shareId) {
 		const endTime = DateTime.fromMillis(
 				Math.floor(Date.now()) + (infomaniak.tokenDuration * 60000),
 				{zone: "Europe/Zurich"}
 		).toFormat("yyyy-MM-dd HH:mm:ss");
-		console.log(endTime);
 		const url = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/share/${shareId}/token`;
 		const body = {
 			"allowed_domains": [
@@ -20,7 +24,6 @@ export default class InfomaniakPlayerService extends PlayerService {
 			"strategy": "HLS",
 			"end_time": endTime,
 		}
-		console.log(body);
 		const headers = {
 			"Authorization": `Bearer ${infomaniak.apiKey}`,
 			"Content-Type": "application/json"
@@ -37,14 +40,5 @@ export default class InfomaniakPlayerService extends PlayerService {
 		}
 		const token = (await response.json()).data;
 		return "https://player.vod2.infomaniak.com/embed/" + shareId + "?" + token;
-	}
-
-	static async getMediaInfo(mediaId) {
-		const url = `https://api.infomaniak.com/v1/medias/${mediaId}`;
-		const response = await fetch(url);
-		if (!response.ok) {
-			throw new Error("Failed to fetch media info");
-		}
-		return await response.json();
 	}
 }
