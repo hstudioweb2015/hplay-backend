@@ -122,7 +122,6 @@ export default class MediaService {
                    AND media_id = ?`;
 		const params = [user.id, mediaId];
 		const result = await DBService.query(sql, params);
-		console.log(result);
 		if (result[0].count == 0) {
 			throw new MediaError("User cannot play this media", 403);
 		}

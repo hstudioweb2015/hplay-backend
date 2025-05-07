@@ -10,7 +10,6 @@ import AppError from "../errors/AppError.js";
  * @param next
  */
 export default function errorHandler(err, req, res, next) {
-	console.log(production);
 	if (!production) {
 		console.error(err);
 	}
