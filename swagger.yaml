@@ -10,7 +10,7 @@ tags:
         description: User operations
     -   name: Media
         description: Media operations
-securityDefinitions: 
+securityDefinitions:
     Bearer:
         type: apiKey
         name: Authorization
@@ -84,7 +84,7 @@ paths:
                 500:
                     description: Internal server error
             security:
-                - Bearer: []
+                -   Bearer: [ ]
         put:
             tags:
                 - User
@@ -113,8 +113,8 @@ paths:
                 500:
                     description: Internal server error
             security:
-                - Bearer: []
-        delete: 
+                -   Bearer: [ ]
+        delete:
             tags:
                 - User
             summary: Delete a user
@@ -133,8 +133,8 @@ paths:
                 500:
                     description: Internal server error
             security:
-                - Bearer: []
-        
+                -   Bearer: [ ]
+    
     /media/search:
         post:
             tags:
@@ -159,7 +159,7 @@ paths:
                 500:
                     description: Internal server error
             security:
-                - Bearer: []
+                -   Bearer: [ ]
     /media/{id}:
         get:
             tags:
@@ -184,7 +184,37 @@ paths:
                 500:
                     description: Internal server error
             security:
-                - Bearer: []
+                -   Bearer: [ ]
+    /media/{id}/play:
+        get:
+            tags:
+                - Media
+            summary: Play media by ID
+            description: This endpoint allows you to play media by its ID.
+            parameters:
+                -   name: id
+                    in: path
+                    required: true
+                    type: integer
+                    description: The unique identifier of the media.
+            responses:
+                200:
+                    description: Media played successfully
+                    schema:
+                        type: object
+                        properties:
+                            url:
+                                type: string
+                                description: The URL of the media.
+                                example: https://example.com/embed/123456?token=abcdef
+                400:
+                    description: Bad request
+                404:
+                    description: Media not found
+                500:
+                    description: Internal server error
+            security:
+                -   Bearer: [ ]
 
 definitions:
     Media:
