@@ -26,7 +26,7 @@ export default class MediaController {
 	 */
 	static async getMediaById(req, res, next) {
 		try {
-			const response = await MediaService.get(req.params.id);
+			const response = await MediaService.get(req.body);
 			res.status(200).json(response);
 		} catch (error) {
 			next(error);
