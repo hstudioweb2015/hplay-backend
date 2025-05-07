@@ -21,7 +21,7 @@ export default class MediaController {
 
 	static async playMedia(req, res, next) {
 		try {
-			const response = await MediaService.play(req.body, req.user.id);
+			const response = await MediaService.play(req.body, req.user);
 			res.status(200).json(response);
 		} catch (error) {
 			next(error);
