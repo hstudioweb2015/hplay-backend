@@ -38,13 +38,4 @@ export default class InfomaniakPlayerService extends PlayerService {
 		const token = (await response.json()).data;
 		return "https://player.vod2.infomaniak.com/embed/" + shareId + "?" + token;
 	}
-
-	static async getMediaInfo(mediaId) {
-		const url = `https://api.infomaniak.com/v1/medias/${mediaId}`;
-		const response = await fetch(url);
-		if (!response.ok) {
-			throw new Error("Failed to fetch media info");
-		}
-		return await response.json();
-	}
 }
