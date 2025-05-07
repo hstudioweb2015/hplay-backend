@@ -12,7 +12,7 @@ router.post("/search",
 			name: {type: "string", required: false},
 			limit: {type: "number", required: false},
 			page: {type: "number", required: false},
-			tags: {type: "array", required: false},
+			tags: {type: "object", required: false},
 		}),
 		MediaController.searchMedia
 );
