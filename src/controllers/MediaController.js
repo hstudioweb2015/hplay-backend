@@ -18,4 +18,13 @@ export default class MediaController {
 			next(error);
 		}
 	}
+
+	static async playMedia(req, res, next) {
+		try {
+			const response = await MediaService.play(req.body, req.user.id);
+			res.status(200).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
 }
