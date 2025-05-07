@@ -5,7 +5,7 @@ import authenticateToken from "../middlewares/authenticateToken.js";
 
 const router = express.Router();
 
-router.post("/",
+router.post("/search",
 		authenticateToken,
 		validateRequest({
 			name: {type: "string", required: false},
