@@ -22,7 +22,6 @@ export default class MediaService {
                m.name,
                m.description,
                m.price,
-               m.share_id           AS shareId,
                m.preview,
                GROUP_CONCAT(t.name) AS tags
         FROM medias m
@@ -102,7 +101,6 @@ export default class MediaService {
                         m.name,
                         m.description,
                         m.price,
-                        m.share_id           as shareId,
                         m.preview,
                         GROUP_CONCAT(t.name) as tags
                  FROM medias m
