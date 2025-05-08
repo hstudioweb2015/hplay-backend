@@ -8,14 +8,17 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import {fileURLToPath} from 'url';
 import path from 'path';
+import {corsOrigin} from "./configs/config.js";
 
 const app = express();
+
+app.use(cors());
 
 // Middleware
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
-app.use(cors());
+
 
 app.use(logger);
 

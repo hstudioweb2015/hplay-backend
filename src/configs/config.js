@@ -18,3 +18,4 @@ export const infomaniak = {
 	allowedDomain: process.env.INFOMANIAK_ALLOWED_DOMAIN || null,
 	tokenDuration: process.env.INFOMANIAK_TOKEN_DURATION || 30,
 }
+export const corsOrigin = process.env.CORS_ORIGIN || '*';
