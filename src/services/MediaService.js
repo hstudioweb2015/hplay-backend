@@ -13,20 +13,29 @@ export default class MediaService {
 	 * @param tags {Array} - Array of tags
 	 * @returns {Promise<{total: number, startAt: number, page: number, limit: number, medias: Array<Media>}>}
 	 */
-	static async search({name = "", limit = 10, page = 1, tags = []} = {}) {
+	static async search({name = "", limit = 10, page = 1, tags = [], userId = null} = {}) {
 		const hasTags = tags.length > 0;
-		const sql = `SELECT m.id, m.name, m.description, m.price, m.share_id as shareId, GROUP_CONCAT(t.name) as tags
+		const sql = `SELECT m.id,
+                        m.name,
+                        m.description,
+                        m.price,
+                        m.share_id           as shareId,
+                        m.preview,
+                        GROUP_CONCAT(t.name) as tags
                  FROM medias m
                           LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
                           LEFT JOIN tags t ON mt.tag_id = t.id
-                 WHERE (m.name LIKE ? OR ? IS NULL) ${hasTags ? "AND (t.name IN (?))" : ""}
-                 	AND m.available = 1
+                 WHERE (m.name LIKE ? OR ? IS NULL) ${hasTags ? "AND (t.name IN (?))" : ""} ${userId ? "AND m.id IN (SELECT media_id FROM medias_has_users WHERE user_id = ?)" : ""}
+                   AND m.available = 1
                  GROUP BY m.id
                  ORDER BY m.name
                  LIMIT ? OFFSET ?`;
 		const params = [`%${name}%`, name];
 		if (hasTags) {
 			params.push(tags);
+		}
+		if (userId) {
+			params.push(userId);
 		}
 		params.push(limit, (page - 1) * limit);
 
@@ -69,7 +78,13 @@ export default class MediaService {
 	 * @returns {Promise<Media>} - Media object
 	 */
 	static async get({id}) {
-		const sql = `SELECT m.id, m.name, m.description, m.price, m.share_id as shareId, GROUP_CONCAT(t.name) as tags
+		const sql = `SELECT m.id,
+                        m.name,
+                        m.description,
+                        m.price,
+                        m.share_id           as shareId,
+                        m.preview,
+                        GROUP_CONCAT(t.name) as tags
                  FROM medias m
                           LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
                           LEFT JOIN tags t ON mt.tag_id = t.id
@@ -82,9 +97,7 @@ export default class MediaService {
 			throw new MediaError("Media not found", 404);
 		}
 		result = Object.assign(new Media(), result[0]);
-		if (!(result.tags instanceof Array)) {
-			result.tags = [result.tags];
-		}
+		result.tags = result.tags ? result.tags.split(',') : [];
 		return result;
 	}
 

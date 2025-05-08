@@ -13,6 +13,7 @@ router.post("/search",
 			limit: {type: "number", required: false},
 			page: {type: "number", required: false},
 			tags: {type: "object", required: false},
+			userId: {type: "number", required: false},
 		}),
 		MediaController.searchMedia
 );
