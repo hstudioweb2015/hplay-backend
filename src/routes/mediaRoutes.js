@@ -7,7 +7,6 @@ const router = express.Router();
 
 // Search for medias
 router.post("/search",
-		authenticateToken,
 		validateRequest({
 			name: {type: "string", required: false},
 			limit: {type: "number", required: false},
