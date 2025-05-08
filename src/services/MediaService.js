@@ -11,35 +11,52 @@ export default class MediaService {
 	 * @param limit {Integer} - Number of results per page
 	 * @param page {Integer} - Page number
 	 * @param tags {Array} - Array of tags
+	 * @param userId {Integer} - User id
 	 * @returns {Promise<{total: number, startAt: number, page: number, limit: number, medias: Array<Media>}>}
 	 */
 	static async search({name = "", limit = 10, page = 1, tags = [], userId = null} = {}) {
 		const hasTags = tags.length > 0;
-		const sql = `SELECT m.id,
-                        m.name,
-                        m.description,
-                        m.price,
-                        m.share_id           as shareId,
-                        m.preview,
-                        GROUP_CONCAT(t.name) as tags
-                 FROM medias m
-                          LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
-                          LEFT JOIN tags t ON mt.tag_id = t.id
-                 WHERE (m.name LIKE ? OR ? IS NULL) ${hasTags ? "AND (t.name IN (?))" : ""} ${userId ? "AND m.id IN (SELECT media_id FROM medias_has_users WHERE user_id = ?)" : ""}
-                   AND m.available = 1
-                 GROUP BY m.id
-                 ORDER BY m.name
-                 LIMIT ? OFFSET ?`;
-		const params = [`%${name}%`, name];
-		if (hasTags) {
-			params.push(tags);
+		const tagPlaceholders = tags.map(() => '?').join(', ');
+		const sql = `
+        SELECT m.id,
+               m.name,
+               m.description,
+               m.price,
+               m.share_id           AS shareId,
+               m.preview,
+               GROUP_CONCAT(t.name) AS tags
+        FROM medias m
+                 LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
+                 LEFT JOIN tags t ON mt.tag_id = t.id
+        WHERE m.available = 1
+            ${name ? "AND (m.name LIKE ?)" : ""} ${userId ? "AND m.id IN (SELECT media_id FROM medias_has_users WHERE user_id = ?)" : ""} ${hasTags ? `AND m.id IN (
+        SELECT media_id
+        FROM medias_has_tags mt2
+        JOIN tags t2 ON mt2.tag_id = t2.id
+        WHERE t2.name IN (${tagPlaceholders})
+        GROUP BY media_id
+        HAVING COUNT(DISTINCT t2.name) = ?
+    )` : ""}
+        GROUP BY m.id
+        ORDER BY m.name
+        LIMIT ? OFFSET ?
+		`;
+
+		const params = [];
+		if (name) {
+			params.push(`%${name}%`);
 		}
 		if (userId) {
 			params.push(userId);
 		}
+		if (hasTags) {
+			params.push(...tags, tags.length);
+		}
+
 		params.push(limit, (page - 1) * limit);
 
 		const result = await DBService.query(sql, params);
+
 
 		let medias = result.map(media => ({
 			...media,
