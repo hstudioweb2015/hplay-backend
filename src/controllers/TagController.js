@@ -2,6 +2,12 @@ import TagService from "../services/TagService.js";
 import TagError from "../errors/TagError.js";
 
 export default class TagController {
+	/**
+	 * Get all tags
+	 * @param req
+	 * @param res
+	 * @param next
+	 */
 	static async getTags(req, res, next) {
 		try {
 			const tags = await TagService.getAll();
@@ -11,6 +17,12 @@ export default class TagController {
 		}
 	}
 
+	/**
+	 * Get a tag by id
+	 * @param req
+	 * @param res
+	 * @param next
+	 */
 	static async getTagById(req, res, next) {
 		try {
 			const tag = await TagService.getById(req.body);
@@ -20,6 +32,12 @@ export default class TagController {
 		}
 	}
 
+	/**
+	 * Create a new tag
+	 * @param req
+	 * @param res
+	 * @param next
+	 */
 	static async createTag(req, res, next) {
 		try {
 			const tag = await TagService.create(req.body);
@@ -29,6 +47,12 @@ export default class TagController {
 		}
 	}
 
+	/**
+	 * Update a tag
+	 * @param req
+	 * @param res
+	 * @param next
+	 */
 	static async updateTag(req, res, next) {
 		try {
 			const tag = await TagService.update(req.body);
@@ -38,6 +62,12 @@ export default class TagController {
 		}
 	}
 
+	/**
+	 * Delete a tag
+	 * @param req
+	 * @param res
+	 * @param next
+	 */
 	static async deleteTag(req, res, next) {
 		try {
 			const tag = await TagService.delete(req.body);

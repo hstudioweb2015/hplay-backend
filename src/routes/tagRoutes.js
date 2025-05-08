@@ -6,11 +6,13 @@ import adminSecurity from "../middlewares/adminSecurity.js";
 
 const router = express.Router();
 
+// Get all tags
 router.get("/",
 		authenticateToken,
 		TagController.getTags
 );
 
+// Search for tags
 router.get("/:id",
 		authenticateToken,
 		validateRequest({
@@ -19,6 +21,7 @@ router.get("/:id",
 		TagController.getTagById
 );
 
+// Create a new tag
 router.post("/",
 		authenticateToken,
 		adminSecurity,
@@ -28,6 +31,7 @@ router.post("/",
 		TagController.createTag
 );
 
+// Update a tag
 router.put("/:id",
 		authenticateToken,
 		adminSecurity,
@@ -38,6 +42,7 @@ router.put("/:id",
 		TagController.updateTag
 );
 
+// Delete a tag
 router.delete("/:id",
 		authenticateToken,
 		adminSecurity,

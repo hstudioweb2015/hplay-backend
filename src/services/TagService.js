@@ -3,6 +3,11 @@ import Tag from "../models/Tag.js";
 import TagError from "../errors/TagError.js";
 
 export default class TagService {
+	/**
+	 * Create a new tag
+	 * @param name
+	 * @returns {Promise<Tag>}
+	 */
 	static async create({name}) {
 		const sql = `INSERT INTO tags (name)
                  VALUES (?)`;
@@ -11,6 +16,10 @@ export default class TagService {
 		return new Tag(id, name);
 	}
 
+	/**
+	 * Get all tags
+	 * @returns {Promise<Tag[]>}
+	 */
 	static async getAll() {
 		const sql = `SELECT id, name
                  FROM tags`;
@@ -19,6 +28,11 @@ export default class TagService {
 		return result.map(tag => Object.assign(new Tag(), tag));
 	}
 
+	/**
+	 * Get a tag by id
+	 * @param id {number} - The id of the tag
+	 * @returns {Promise<Tag>}
+	 */
 	static async getById({id}) {
 		const sql = `SELECT id, name
                  FROM tags
@@ -31,6 +45,12 @@ export default class TagService {
 		return Object.assign(new Tag(), result[0]);
 	}
 
+	/**
+	 * Update a tag
+	 * @param id {number} - The id of the tag
+	 * @param name {string} - The new name of the tag
+	 * @returns {Promise<Tag>}
+	 */
 	static async update({id, name}) {
 		const sql = `UPDATE tags
                  SET name = ?
@@ -51,6 +71,11 @@ export default class TagService {
 		return new Tag(id, name);
 	}
 
+	/**
+	 * Delete a tag
+	 * @param id {number} - The id of the tag
+	 * @returns {Promise<{message: string}>}
+	 */
 	static async delete({id}) {
 		const sql = `DELETE
                  FROM tags
