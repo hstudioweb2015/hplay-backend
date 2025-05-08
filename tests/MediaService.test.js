@@ -9,6 +9,7 @@ function getMedia() {
 		description: 'exampleDescription',
 		price: 100,
 		shareId: "aaa-bbbb-cccc-dddd",
+		preview: 'examplePreview',
 		tags: ['exampleTag']
 	};
 }
@@ -17,8 +18,8 @@ beforeEach(async () => {
 	await connectDB();
 	const media = getMedia();
 	await DBService.query(
-			'INSERT INTO medias (id, name, description, price, share_id) VALUES (?, ?, ?, ?, ?)',
-			[1, media.name, media.description, media.price, media.shareId],
+			'INSERT INTO medias (id, name, description, price, share_id, preview) VALUES (?, ?, ?, ?, ?, ?)',
+			[1, media.name, media.description, media.price, media.shareId, media.preview],
 			true
 	);
 	await DBService.query(
