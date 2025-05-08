@@ -55,8 +55,11 @@ export default class MediaService {
                                     LEFT JOIN tags t ON mt.tag_id = t.id
                            WHERE (m.name LIKE ? OR ? IS NULL)
                              AND m.available = 1
-                               ${hasTags ? "AND (t.name IN (?))" : ""}`;
+                               ${hasTags ? "AND (t.name IN (?))" : ""} ${userId ? "AND m.id IN (SELECT media_id FROM medias_has_users WHERE user_id = ?)" : ""}`;
 		const totalCountParams = [`%${name}%`, name];
+		if (userId) {
+			totalCountParams.push(userId);
+		}
 		if (hasTags) {
 			totalCountParams.push(tags);
 		}
