@@ -12,6 +12,8 @@ tags:
         description: Media operations
     -   name: Tag
         description: Tag operations
+    -   name: Payment
+        description: Payment operations
 securityDefinitions:
     Bearer:
         type: apiKey
@@ -339,6 +341,67 @@ paths:
                     description: Internal server error
             security:
                 -   Bearer: [ ]
+    /payment:
+        post:
+            tags:
+                - Payment
+            summary: Process a payment
+            description: This endpoint allows you to process a payment.
+            parameters:
+                -   name: body
+                    in: body
+                    required: true
+                    schema:
+                        properties:
+                            medias:
+                                type: array
+                                items:
+                                    type: integer
+                                description: The list of media IDs to purchase.
+                                required: true
+            responses:
+                200:
+                    description: Payment processed successfully
+                    schema:
+                        type: object
+                        properties:
+                            url:
+                                type: string
+                                description: The URL to redirect to for payment.
+                                example: https://payment.example.com/checkout?token=abcdef
+                400:
+                    description: Bad request
+                500:
+                    description: Internal server error
+            security:
+                -   Bearer: [ ]
+    /payment/webhook:
+        post:
+            tags:
+                - Payment
+            summary: Payment webhook
+            description: This endpoint allows you to receive payment notifications.
+            parameters:
+                -   name: body
+                    in: body
+                    required: true
+                    schema:
+                        properties:
+                            status:
+                                type: string
+                                description: The status of the payment.
+                                required: true
+                            orderId:
+                                type: string
+                                description: The unique identifier of the order.
+                                required: true
+            responses:
+                200:
+                    description: Webhook received successfully
+                400:
+                    description: Bad request
+                500:
+                    description: Internal server error
 
 definitions:
     Media:
@@ -494,3 +557,4 @@ definitions:
                         example: 1746560493
             user:
                 $ref: '#/definitions/User'
+    
