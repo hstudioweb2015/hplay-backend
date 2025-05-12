@@ -19,3 +19,9 @@ export const infomaniak = {
 	tokenDuration: process.env.INFOMANIAK_TOKEN_DURATION || 30,
 }
 export const corsOrigin = process.env.CORS_ORIGIN || '*';
+
+export const zahls = {
+	instanceId: process.env.ZAHLS_INSTANCE_ID || '',
+	apiKey: process.env.ZAHLS_API_KEY || '',
+	tva: process.env.ZAHLS_TVA || 0,
+}
