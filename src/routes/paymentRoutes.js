@@ -9,6 +9,7 @@ router.post("/",
 		authenticateToken,
 		validateRequest({
 			medias: {type: "object", required: true},
+			redirectUrl: {type: "string", required: true},
 		}),
 		PaymentController.createPayment
 );

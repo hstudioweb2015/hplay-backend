@@ -7,9 +7,10 @@ export default class ZahlsPaymentService extends PaymentService {
 	 * @param referenceId {string} - The reference ID of the payment
 	 * @param totalPrice {number} - The total price of the payment
 	 * @param description {string} - The payment description
+	 * @param redirectUrl {string} - The URL to redirect to after payment
 	 * @returns {Promise<string>} - The payment link
 	 */
-	static async createPaylink(referenceId, totalPrice, description) {
+	static async createPaylink(referenceId, totalPrice, description, redirectUrl) {
 		const url = `v1.0/Invoice?instance=${zahls.instanceId}`;
 		const data = {
 			title: "HPlay",
@@ -19,6 +20,8 @@ export default class ZahlsPaymentService extends PaymentService {
 			amount: totalPrice,
 			vatRate: zahls.tva,
 			currency: "CHF",
+			successRedirectUrl : redirectUrl + "?status=success",
+			failedRedirectUrl : redirectUrl + "?status=failed",
 		}
 		const options = {
 			method: 'POST',

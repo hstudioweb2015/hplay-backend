@@ -359,6 +359,10 @@ paths:
                                     type: integer
                                 description: The list of media IDs to purchase.
                                 required: true
+                            redirectUrl:
+                                type: string
+                                description: The URL to redirect to after payment.
+                                required: true
             responses:
                 200:
                     description: Payment processed successfully

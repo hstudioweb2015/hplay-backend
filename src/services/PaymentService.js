@@ -7,14 +7,20 @@ export default class PaymentService {
 	/**
 	 * Create a new payment
 	 * @param medias {Array} - The list of media IDs to be paid for
+	 * @param redirectUrl {string} - The URL to redirect to after payment
 	 * @param user {Object} - The user making the payment
 	 * @returns {Promise<{url: string}>} - The URL for the payment
 	 */
-	static async createPayment({medias}, user) {
+	static async createPayment({medias,redirectUrl}, user) {
 		const referenceId = await this.createPaymentInDatabase(medias, user.id);
 		const totalPrice = await this.getTotalPrice(medias);
+		if (totalPrice === 0) {
+			return {
+				url: redirectUrl + "?status=success",
+			}
+		}
 		const description = await this.createPaymentDescription(medias);
-		const paylink = await this.createPaylink(referenceId, totalPrice, description);
+		const paylink = await this.createPaylink(referenceId, totalPrice, description, redirectUrl);
 		return {
 			url: paylink,
 		};
@@ -161,9 +167,10 @@ export default class PaymentService {
 	 * @param referenceId {string} - The reference ID of the payment
 	 * @param totalPrice {number} - The total price of the payment
 	 * @param description {string} - The payment description
+	 * @param redirectUrl {string} - The URL to redirect to after payment
 	 * @returns {Promise<string>} - The payment link
 	 */
-	static async createPaylink(referenceId, totalPrice, description) {
+	static async createPaylink(referenceId, totalPrice, description, redirectUrl) {
 		throw new PaymentError(`createPaylink method not implemented`);
 	}
 }
