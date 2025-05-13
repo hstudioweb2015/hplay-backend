@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 
 dotenv.config();
+export const appName = process.env.APP_NAME || 'HPlay';
 export const port = process.env.PORT || 3000;
 export const database = {
 	host: process.env.DB_HOST || 'localhost',
@@ -19,3 +20,9 @@ export const infomaniak = {
 	tokenDuration: process.env.INFOMANIAK_TOKEN_DURATION || 30,
 }
 export const corsOrigin = process.env.CORS_ORIGIN || '*';
+
+export const zahls = {
+	instanceId: process.env.ZAHLS_INSTANCE_ID || '',
+	apiKey: process.env.ZAHLS_API_KEY || '',
+	tva: process.env.ZAHLS_TVA || 0,
+}
