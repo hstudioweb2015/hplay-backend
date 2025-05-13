@@ -1,10 +1,10 @@
-import PaymentService from "../services/PaymentService.js";
+import ZahlsPaymentService from "../services/ZahlsPaymentService.js";
 
 export default class PaymentController {
 	
 	static async createPayment(req, res, next) {
 		try {
-			const response = await PaymentService.createPayment(req.body, req.user);
+			const response = await ZahlsPaymentService.createPayment(req.body, req.user);
 			res.status(200).json(response);
 		} catch (error) {
 			next(error);
@@ -13,7 +13,7 @@ export default class PaymentController {
 	
 	static async updatePayment(req, res, next) {
 		try {
-			const response = await PaymentService.updatePayment(req.body);
+			const response = await ZahlsPaymentService.updatePayment(req.body);
 			res.status(200).json(response);
 		} catch (error) {
 			next(error);

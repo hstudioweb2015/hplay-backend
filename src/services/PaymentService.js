@@ -1,90 +1,47 @@
 import DBService from "./DBService.js";
-import {zahls} from "../configs/config.js";
 import crypto from "crypto";
+import MediaService from "./MediaService.js";
+import PaymentError from "../errors/PaymentError.js";
 
 export default class PaymentService {
 	/**
 	 * Create a new payment
 	 * @param medias {Array} - The list of media IDs to be paid for
 	 * @param user {Object} - The user making the payment
-	 * @returns {Promise<{url}>} - The URL for the payment
+	 * @returns {Promise<{url: string}>} - The URL for the payment
 	 */
 	static async createPayment({medias}, user) {
-		const referenceId = await PaymentService.createPaymentInDatabase(medias, user.id);
-		const totalPrice = await PaymentService.getTotalPrice(medias);
-		const description = await PaymentService.createPaymentDescription(medias);
-		const url = `v1.0/Invoice?instance=${zahls.instanceId}`;
-		const data = {
-			title: "HPlay",
-			description: description,
-			referenceId: referenceId,
-			purpose: "HPlay",
-			amount: totalPrice,
-			vatRate: zahls.tva,
-			currency: "CHF",
-		}
-		const options = {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-API-KEY': zahls.apiKey,
-			},
-			body: JSON.stringify(data),
-		};
-		const response = await fetch(`https://api.zahls.ch/${url}`, options);
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(`Error creating payment: ${error.message}`);
-		}
-		const responseData = await response.json();
-		if (responseData.status !== "success") {
-			throw new Error(`Error creating payment: ${responseData.message}`);
-		}
+		const referenceId = await this.createPaymentInDatabase(medias, user.id);
+		const totalPrice = await this.getTotalPrice(medias);
+		const description = await this.createPaymentDescription(medias);
+		const paylink = await this.createPaylink(referenceId, totalPrice, description);
 		return {
-			url : responseData.data[0].link
+			url: paylink,
 		};
 	}
 
-
+	/**
+	 * Update the payment status in the database
+	 * @param transaction {Object} - The transaction object containing payment details
+	 * @returns {Promise<{status: string, message: string}>} - The status and message of the update
+	 */
 	static async updatePayment({transaction}) {
 		const {referenceId, status} = transaction;
 		let isPaid = status === "confirmed";
-		const sql = `SELECT users_id, is_paid FROM payments WHERE reference_id = ?`;
-		const params = [referenceId];
-		const response = await DBService.query(sql, params);
-		if (response.length === 0) {
-			throw new Error("Payment not found");
-		}
-		const userId = response[0].users_id;
-		const isAlreadyPaid = response[0].is_paid;
-		if (isPaid != isAlreadyPaid) {
-			const sqlUpdate = `UPDATE payments SET is_paid = ? WHERE reference_id = ?`;
-			const paramsUpdate = [isPaid, referenceId];
-			await DBService.query(sqlUpdate, paramsUpdate);
-			const sqlMediaHasPayment = `SELECT medias_has_payments.medias_id FROM medias_has_payments
-						INNER JOIN payments ON payments.id = medias_has_payments.payments_id
-						WHERE payments.reference_id = ?`;
-			const paramsMediaHasPayment = [referenceId];
-			const medias = await DBService.query(sqlMediaHasPayment, paramsMediaHasPayment);
+		const payment = await this.getPaymentByReferenceId(referenceId);
+		const userId = payment.users_id;
+		const actualPayStatus = payment.is_paid;
+		if (isPaid != actualPayStatus) {
+			await this.updatePaymentIsPaid(referenceId, isPaid);
+			const medias = await MediaService.getMediasIdByReferenceId(referenceId);
 			if (isPaid) {
-				const sqlMediaHasUser = `INSERT INTO medias_has_users (media_id, user_id) VALUES (?, ?)`;
-				for (const media of medias) {
-					const paramsMediaHasUser = [media.medias_id, userId];
-					await DBService.query(sqlMediaHasUser, paramsMediaHasUser);
-				}
+				await MediaService.addMediasToUser(medias, userId);
 				return {
 					status: "success",
 					message: "Payment is successful comfirmed",
 				}
 			} else {
-				const sqlMediaHasUser = `DELETE
-                                 FROM medias_has_users
-                                 WHERE media_id = ?
-                                   AND user_id = ?`;
-				for (const media of medias) {
-					const paramsMediaHasUser = [media.medias_id, userId];
-					await DBService.query(sqlMediaHasUser, paramsMediaHasUser);
-				}
+				await MediaService.removeMediasToUser(medias, userId);
 				return {
 					status: "success",
 					message: "Payment is successfully canceled",
@@ -105,7 +62,7 @@ export default class PaymentService {
 	 * @returns {Promise<string>} - The reference ID of the payment
 	 */
 	static async createPaymentInDatabase(medias, userId) {
-		const referenceId = await PaymentService.generateReferenceId();
+		const referenceId = await this.generateReferenceId();
 		const sqlPayment = `INSERT INTO payments (reference_id, users_id)
 										VALUES (?, ?)`;
 		const paramsPayment = [referenceId, userId];
@@ -136,7 +93,12 @@ export default class PaymentService {
 		}
 		return totalPrice;
 	}
-	
+
+	/**
+	 * Create a payment description
+	 * @param medias {Array} - The list of media IDs
+	 * @returns {Promise<string>} - The payment description
+	 */
 	static async createPaymentDescription(medias) {
 		let description = "";
 		for (const mediaId of medias) {
@@ -149,7 +111,11 @@ export default class PaymentService {
 		}
 		return description.slice(0, -2);
 	}
-	
+
+	/**
+	 * Generate a unique reference ID for the payment
+	 * @returns {Promise<string>} - The generated reference ID
+	 */
 	static async generateReferenceId() {
 		const sql = `SELECT COUNT(*) as count FROM payments WHERE reference_id = ?`;
 		while (true) {
@@ -160,5 +126,44 @@ export default class PaymentService {
 				return referenceId;
 			}
 		}
+	}
+
+	/**
+	 * Get a payment by reference ID
+	 * @param referenceId {string} - The reference ID of the payment
+	 * @returns {Promise<Object>} - The payment object
+	 */
+	static async getPaymentByReferenceId(referenceId) {
+		const sql = `SELECT users_id, is_paid FROM payments WHERE reference_id = ?`;
+		const params = [referenceId];
+		const result = await DBService.query(sql, params);
+		if (result.length > 0) {
+			return result[0];
+		} else {
+			throw new PaymentError(`No payment found for reference_id: ${referenceId}`);
+		}
+	}
+
+	/**
+	 * Update the payment status in the database
+	 * @param referenceId {string} - The reference ID of the payment
+	 * @param isPaid {boolean} - The payment status
+	 * @returns {Promise<void>} - The updated payment object
+	 */
+	static async updatePaymentIsPaid(referenceId, isPaid) {
+		const sql = `UPDATE payments SET is_paid = ? WHERE reference_id = ?`;
+		const params = [isPaid, referenceId];
+		await DBService.query(sql, params);
+	}
+
+	/**
+	 * Create a payment link using Zahls API
+	 * @param referenceId {string} - The reference ID of the payment
+	 * @param totalPrice {number} - The total price of the payment
+	 * @param description {string} - The payment description
+	 * @returns {Promise<string>} - The payment link
+	 */
+	static async createPaylink(referenceId, totalPrice, description) {
+		throw new PaymentError(`createPaylink method not implemented`);
 	}
 }

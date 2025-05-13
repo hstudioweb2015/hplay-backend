@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 
 dotenv.config();
+export const appName = process.env.APP_NAME || 'HPlay';
 export const port = process.env.PORT || 3000;
 export const database = {
 	host: process.env.DB_HOST || 'localhost',

@@ -158,4 +158,49 @@ export default class MediaService {
 		}
 		return true;
 	}
+
+	/**
+	 * Get all tags
+	 * @param referenceId {string} - Reference id
+	 * @returns {Promise<Array>} - Array of tags
+	 */
+	static async getMediasIdByReferenceId(referenceId) {
+		const sql = `SELECT medias_id FROM medias_has_payments
+						INNER JOIN payments ON payments.id = medias_has_payments.payments_id
+						WHERE payments.reference_id = ?`;
+		const params = [referenceId];
+		const result = await DBService.query(sql, params);
+		if (result.length > 0) {
+			return result.map(media => media.medias_id);
+		}
+		return null;
+	}
+
+	/**
+	 * Get all tags
+	 * @param medias {Array} - Array of media ids
+	 * @param userId {Integer} - User id
+	 * @returns {Promise<Void>}
+	 */
+	static async addMediasToUser(medias, userId) {
+		const sql = `INSERT INTO medias_has_users (media_id, user_id) VALUES (?, ?)`;
+		for (const mediaId of medias) {
+			const params = [mediaId, userId];
+			await DBService.query(sql, params);
+		}
+	}
+
+	/**
+	 * Remove all medias from user
+	 * @param medias {Array} - Array of media ids
+	 * @param userId {Integer} - User id
+	 * @returns {Promise<Void>}
+	 */
+	static async removeMediasToUser(medias, userId) {
+		const sql = `DELETE FROM medias_has_users WHERE media_id = ? AND user_id = ?`;
+		for (const mediaId of medias) {
+			const params = [mediaId, userId];
+			await DBService.query(sql, params);
+		}
+	}
 }
