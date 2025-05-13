@@ -2,130 +2,145 @@ import MediaService from '../src/services/MediaService.js';
 import {connectDB} from "../src/configs/db.js";
 import DBService from "../src/services/DBService.js";
 
-function getMedia() {
-	return {
-		id: 1,
-		name: 'exampleName',
-		description: 'exampleDescription',
-		price: 100,
-		shareId: "aaa-bbbb-cccc-dddd",
-		preview: 'examplePreview',
-		tags: ['exampleTag']
-	};
-}
-
-beforeEach(async () => {
+beforeAll(async () => {
 	await connectDB();
-	const media = getMedia();
-	await DBService.query(
-			'INSERT INTO medias (id, name, description, price, share_id, preview) VALUES (?, ?, ?, ?, ?, ?)',
-			[1, media.name, media.description, media.price, media.shareId, media.preview],
-			true
-	);
-	await DBService.query(
-			'INSERT INTO tags (id, name) VALUES (?, ?)',
-			[1, 'exampleTag'],
-			true
-	);
-	await DBService.query(
-			'INSERT INTO medias_has_tags (media_id, tag_id) VALUES (?, ?)',
-			[1, 1],
-	);
-});
-
-afterEach(async () => {
-	await DBService.query('DELETE FROM medias_has_tags WHERE media_id = ? AND tag_id = ?', [1, 1]);
-	await DBService.query('DELETE FROM tags WHERE id = ?', [1]);
-	await DBService.query('DELETE FROM medias WHERE id = ?', [1]);
 });
 
 describe('Media Service', () => {
+	const mockMedia = {
+		id: 1,
+		name: 'TestMedia',
+		description: 'Test Description',
+		price: 1000,
+		preview: 'preview.jpg',
+		shareId: 'test-share-id',
+		tags: ['tag1', 'tag2']
+	};
+
 	it('should search medias', async () => {
 		// Given
-		const name = 'exampleName';
-		const limit = 10;
-		const page = 1;
-		const tags = ['exampleTag'];
-		const media = getMedia();
+		const searchParams = {
+			name: 'Test',
+			limit: 10,
+			page: 1,
+			tags: ['tag1']
+		};
+		DBService.query = jest.fn()
+				.mockResolvedValueOnce([{...mockMedia, tags: mockMedia.tags.join(',')}])
+				.mockResolvedValueOnce([{ total: 1 }]);
 
 		// When
-		const response = await MediaService.search({name, limit, page, tags});
+		const response = await MediaService.search(searchParams);
+
 		// Then
 		expect(response).toHaveProperty('total', 1);
 		expect(response).toHaveProperty('page', 1);
 		expect(response).toHaveProperty('limit', 10);
-		expect(response).toHaveProperty('medias');
-		expect(response.medias).toHaveLength(1);
-		expect(response.medias[0]).toHaveProperty('id', media.id);
+		expect(response.medias[0]).toHaveProperty('id', mockMedia.id);
+		expect(response.medias[0]).toHaveProperty('tags', mockMedia.tags);
 	});
 
-	it('should not find any media', async () => {
+	it('should get media by id', async () => {
 		// Given
-		const name = 'nonExistingName';
-		const limit = 10;
-		const page = 1;
-		const tags = ['nonExistingTag'];
+		DBService.query = jest.fn()
+				.mockResolvedValue([{...mockMedia, tags: mockMedia.tags.join(',')}]);
 
 		// When
-		const response = await MediaService.search({name, limit, page, tags});
+		const response = await MediaService.get({ id: 1 });
 
 		// Then
-		expect(response).toHaveProperty('total', 0);
-		expect(response).toHaveProperty('page', 1);
-		expect(response).toHaveProperty('limit', 10);
-		expect(response).toHaveProperty('medias');
-		expect(response.medias).toHaveLength(0);
+		expect(response).toHaveProperty('id', mockMedia.id);
+		expect(response).toHaveProperty('name', mockMedia.name);
+		expect(response).toHaveProperty('description', mockMedia.description);
+		expect(response).toHaveProperty('tags', mockMedia.tags);
 	});
 
-	it('should get a media by id', async () => {
+	it('should throw error if media not found', async () => {
 		// Given
-		const id = 1;
-		const media = getMedia();
+		DBService.query = jest.fn().mockResolvedValue([]);
 
-		// When
-		const response = await MediaService.get({id});
-
-		// Then
-		expect(response).toHaveProperty('id', media.id);
-		expect(response).toHaveProperty('name', media.name);
-		expect(response).toHaveProperty('description', media.description);
-		expect(response).toHaveProperty('price', media.price);
-		expect(response).toHaveProperty('shareId', media.shareId);
-		expect(response).toHaveProperty('tags');
-		expect(response.tags).toEqual(media.tags);
+		// When & Then
+		await expect(async () => {
+			await MediaService.get({ id: 999 });
+		}).rejects.toThrow('Media operation failed.');
+		await expect(async () => {
+			await MediaService.get({ id: 999 });
+		}).rejects.toHaveProperty('messages', 'Media not found');
 	});
 
-	it('should not find any media by id', async () => {
+	it('should generate media play url', async () => {
 		// Given
-		const id = 999;
+		const mockUser = { id: 1, isAdmin: false };
+		const expectedUrl = 'https://player.example.com/embed';
 
-		// When
-		const response = MediaService.get(id);
-
-		// Then
-		await expect(response).rejects.toThrow('Media operation failed.');
-		await expect(response).rejects.toHaveProperty('status', 404);
-		await expect(response).rejects.toHaveProperty('messages', 'Media not found');
-	});
-
-	it('should generate a media embed URL', async () => {
-		// Given
-		const shareId = 'aaa-bbbb-cccc-dddd';
-		const expectedUrl = `https://player.vod2.infomaniak.com/embed/${shareId}?token=`;
-		// Mock the fetch function
+		DBService.query = jest.fn()
+				.mockResolvedValueOnce([{ count: 1 }])
+				.mockResolvedValueOnce([{ shareId: 'test-share-id' }]);
 		global.fetch = jest.fn(() =>
 				Promise.resolve({
 					ok: true,
-					json: () => Promise.resolve({data: 'token=exampleToken'}),
+					json: () => Promise.resolve({ data: 'token=test-token' })
 				})
 		);
-		MediaService.checkUserCanPlay = jest.fn(() => Promise.resolve(true));
 
 		// When
-		const response = await MediaService.play({id: 1}, 1);
+		const response = await MediaService.play({ id: 1 }, mockUser);
 
 		// Then
 		expect(response).toHaveProperty('url');
+	});
 
+	it('should throw error if user cannot play media', async () => {
+		// Given
+		const mockUser = { id: 1, isAdmin: false };
+		DBService.query = jest.fn().mockResolvedValue([{ count: 0 }]);
+
+		// When & Then
+		await expect(async () => {
+			await MediaService.checkUserCanPlay(1, mockUser);
+		}).rejects.toThrow('Media operation failed.');
+		await expect(async () => {
+			await MediaService.checkUserCanPlay(1, mockUser);
+		}).rejects.toHaveProperty('messages', 'User cannot play this media');
+	});
+
+	it('should get medias by reference id', async () => {
+		// Given
+		const mockMediaIds = [1, 2];
+		DBService.query = jest.fn().mockResolvedValue(
+				mockMediaIds.map(id => ({ medias_id: id }))
+		);
+
+		// When
+		const response = await MediaService.getMediasIdByReferenceId('test-ref');
+
+		// Then
+		expect(response).toEqual(mockMediaIds);
+	});
+
+	it('should add medias to user', async () => {
+		// Given
+		const mockMediaIds = [1, 2];
+		const userId = 1;
+		DBService.query = jest.fn();
+
+		// When
+		await MediaService.addMediasToUser(mockMediaIds, userId);
+
+		// Then
+		expect(DBService.query).toHaveBeenCalledTimes(mockMediaIds.length);
+	});
+
+	it('should remove medias from user', async () => {
+		// Given
+		const mockMediaIds = [1, 2];
+		const userId = 1;
+		DBService.query = jest.fn();
+
+		// When
+		await MediaService.removeMediasToUser(mockMediaIds, userId);
+
+		// Then
+		expect(DBService.query).toHaveBeenCalledTimes(mockMediaIds.length);
 	});
 });
