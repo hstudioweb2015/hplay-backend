@@ -8,13 +8,11 @@ const router = express.Router();
 
 // Get all tags
 router.get("/",
-		authenticateToken,
 		TagController.getTags
 );
 
 // Search for tags
 router.get("/:id",
-		authenticateToken,
 		validateRequest({
 			id: {type: "string", required: true},
 		}),
