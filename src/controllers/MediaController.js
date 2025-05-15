@@ -33,6 +33,24 @@ export default class MediaController {
 		}
 	}
 
+	static async createMedia(req, res, next) {
+		try {
+			const response = await MediaService.create(req.body);
+			res.status(201).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
+
+	static async uploadMedia(req, res, next) {
+		try {
+			const response = await MediaService.upload(req.file);
+			res.status(200).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
+
 	/**
 	 * request a url with unique token to play a media
 	 * @param req

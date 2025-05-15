@@ -11,14 +11,15 @@ export default class PaymentService {
 	 * @param user {Object} - The user making the payment
 	 * @returns {Promise<{url: string}>} - The URL for the payment
 	 */
-	static async createPayment({medias,redirectUrl}, user) {
-		const referenceId = await this.createPaymentInDatabase(medias, user.id);
+	static async createPayment({medias, redirectUrl}, user) {
 		const totalPrice = await this.getTotalPrice(medias);
 		if (totalPrice === 0) {
+			await MediaService.addMediasToUser(medias, user.id);
 			return {
 				url: redirectUrl + "?status=success",
 			}
 		}
+		const referenceId = await this.createPaymentInDatabase(medias, user.id);
 		const description = await this.createPaymentDescription(medias);
 		const paylink = await this.createPaylink(referenceId, totalPrice, description, redirectUrl);
 		return {
@@ -70,11 +71,11 @@ export default class PaymentService {
 	static async createPaymentInDatabase(medias, userId) {
 		const referenceId = await this.generateReferenceId();
 		const sqlPayment = `INSERT INTO payments (reference_id, users_id)
-										VALUES (?, ?)`;
+                        VALUES (?, ?)`;
 		const paramsPayment = [referenceId, userId];
 		const paymentId = await DBService.query(sqlPayment, paramsPayment, true);
 		const sqlMediaHasPayment = `INSERT INTO medias_has_payments (medias_id, payments_id)
-										VALUES (?, ?)`;
+                                VALUES (?, ?)`;
 		for (const mediaId of medias) {
 			const paramsMediaHasPayment = [mediaId, paymentId];
 			await DBService.query(sqlMediaHasPayment, paramsMediaHasPayment);
@@ -90,7 +91,9 @@ export default class PaymentService {
 	static async getTotalPrice(medias) {
 		let totalPrice = 0;
 		for (const mediaId of medias) {
-			const sql = `SELECT price FROM medias WHERE id = ?`;
+			const sql = `SELECT price
+                   FROM medias
+                   WHERE id = ?`;
 			const params = [mediaId];
 			const result = await DBService.query(sql, params);
 			if (result.length > 0) {
@@ -108,7 +111,9 @@ export default class PaymentService {
 	static async createPaymentDescription(medias) {
 		let description = "";
 		for (const mediaId of medias) {
-			const sql = `SELECT name, price FROM medias WHERE id = ?`;
+			const sql = `SELECT name, price
+                   FROM medias
+                   WHERE id = ?`;
 			const params = [mediaId];
 			const result = await DBService.query(sql, params);
 			if (result.length > 0) {
@@ -123,7 +128,9 @@ export default class PaymentService {
 	 * @returns {Promise<string>} - The generated reference ID
 	 */
 	static async generateReferenceId() {
-		const sql = `SELECT COUNT(*) as count FROM payments WHERE reference_id = ?`;
+		const sql = `SELECT COUNT(*) as count
+                 FROM payments
+                 WHERE reference_id = ?`;
 		while (true) {
 			const referenceId = crypto.randomBytes(16).toString("hex");
 			const params = [referenceId];
@@ -140,7 +147,9 @@ export default class PaymentService {
 	 * @returns {Promise<Object>} - The payment object
 	 */
 	static async getPaymentByReferenceId(referenceId) {
-		const sql = `SELECT users_id, is_paid FROM payments WHERE reference_id = ?`;
+		const sql = `SELECT users_id, is_paid
+                 FROM payments
+                 WHERE reference_id = ?`;
 		const params = [referenceId];
 		const result = await DBService.query(sql, params);
 		if (result.length > 0) {
@@ -157,7 +166,9 @@ export default class PaymentService {
 	 * @returns {Promise<void>} - The updated payment object
 	 */
 	static async updatePaymentIsPaid(referenceId, isPaid) {
-		const sql = `UPDATE payments SET is_paid = ? WHERE reference_id = ?`;
+		const sql = `UPDATE payments
+                 SET is_paid = ?
+                 WHERE reference_id = ?`;
 		const params = [isPaid, referenceId];
 		await DBService.query(sql, params);
 	}

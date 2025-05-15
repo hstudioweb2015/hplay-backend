@@ -2,6 +2,7 @@ import express from "express";
 import MediaController from "../controllers/MediaController.js";
 import validateRequest from "../middlewares/validateRequest.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
+import adminSecurity from "./../middlewares/adminSecurity.js";
 
 const router = express.Router();
 
@@ -24,6 +25,25 @@ router.get("/:id",
 			id: {type: "string", required: true},
 		}),
 		MediaController.getMediaById
+);
+
+router.post("/",
+		authenticateToken,
+		adminSecurity,
+		validateRequest({
+			name: {type: "string", required: true},
+			description: {type: "string", required: true},
+			price: {type: "number", required: true},
+			tags: {type: "object", required: true},
+			available: {type: "boolean", required: false},
+		}),
+		MediaController.createMedia
+)
+
+router.post(":id/upload",
+		authenticateToken,
+		adminSecurity,
+		MediaController.uploadMedia
 );
 
 // Request a url with unique token to play a media

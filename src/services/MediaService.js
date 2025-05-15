@@ -2,6 +2,8 @@ import DBService from "./DBService.js";
 import MediaError from "../errors/MediaError.js";
 import InfomaniakPlayerService from "./InfomaniakPlayerService.js";
 import Media from "../models/Media.js";
+import Busboy from "busboy";
+import got from "got";
 
 export default class MediaService {
 
@@ -119,6 +121,40 @@ export default class MediaService {
 		return result;
 	}
 
+	static async create({name, description, price, tags, available = 1}) {
+
+	}
+
+	static async upload({id}, headers, file) {
+		// use busboy for uploading files by chunks
+		const busboy = new Busboy({headers: headers});
+		let metadata = null;
+
+		busboy.on("file", (fieldname, fileStream, filename, encoding, mimetype) => {
+			if (fieldname !== "file") return;
+
+			const uploadStream = got.stream.post(`https://api.infomaniak.com/v1/media/${id}/upload`, {
+				headers: {
+					"Authorization": `Bearer ${process.env.INFOMANIAK_API_KEY}`,
+					"Content-Type": mimetype,
+					"Content-Length": fileStream.length,
+				},
+			});
+			fileStream.pipe(uploadStream);
+			uploadStream.on("response", (response) => {
+				if (response.statusCode === 200) {
+					console.log("File uploaded successfully");
+				} else {
+					console.error("Error uploading file:", response.statusCode);
+				}
+			});
+			uploadStream.on("error", (error) => {
+				console.error("Error uploading file:", error);
+			});
+		});
+
+	}
+
 	/**
 	 * Request a url with unique token to play a media
 	 * @param id {Integer} - Media id
@@ -165,9 +201,10 @@ export default class MediaService {
 	 * @returns {Promise<Array>} - Array of tags
 	 */
 	static async getMediasIdByReferenceId(referenceId) {
-		const sql = `SELECT medias_id FROM medias_has_payments
-						INNER JOIN payments ON payments.id = medias_has_payments.payments_id
-						WHERE payments.reference_id = ?`;
+		const sql = `SELECT medias_id
+                 FROM medias_has_payments
+                          INNER JOIN payments ON payments.id = medias_has_payments.payments_id
+                 WHERE payments.reference_id = ?`;
 		const params = [referenceId];
 		const result = await DBService.query(sql, params);
 		if (result.length > 0) {
@@ -183,7 +220,8 @@ export default class MediaService {
 	 * @returns {Promise<Void>}
 	 */
 	static async addMediasToUser(medias, userId) {
-		const sql = `INSERT INTO medias_has_users (media_id, user_id) VALUES (?, ?)`;
+		const sql = `INSERT INTO medias_has_users (media_id, user_id)
+                 VALUES (?, ?)`;
 		for (const mediaId of medias) {
 			const params = [mediaId, userId];
 			await DBService.query(sql, params);
@@ -197,7 +235,10 @@ export default class MediaService {
 	 * @returns {Promise<Void>}
 	 */
 	static async removeMediasToUser(medias, userId) {
-		const sql = `DELETE FROM medias_has_users WHERE media_id = ? AND user_id = ?`;
+		const sql = `DELETE
+                 FROM medias_has_users
+                 WHERE media_id = ?
+                   AND user_id = ?`;
 		for (const mediaId of medias) {
 			const params = [mediaId, userId];
 			await DBService.query(sql, params);
