@@ -2,8 +2,15 @@ import DBService from "./DBService.js";
 import MediaError from "../errors/MediaError.js";
 import InfomaniakPlayerService from "./InfomaniakPlayerService.js";
 import Media from "../models/Media.js";
+import FormData from "form-data";
+import {PassThrough, pipeline} from "stream";
+import fetch from "node-fetch";
 import Busboy from "busboy";
-import got from "got";
+import {infomaniak} from "../configs/config.js";
+
+const MAX_BUFFER_SIZE = 50 * 1024 * 1024; // 50 Mo
+const RESUME_BUFFER_SIZE = 40 * 1024 * 1024; // 40 Mo
+let count = 0;
 
 export default class MediaService {
 
@@ -125,34 +132,79 @@ export default class MediaService {
 
 	}
 
-	static async upload({id}, headers, file) {
-		// use busboy for uploading files by chunks
-		const busboy = new Busboy({headers: headers});
-		let metadata = null;
+	static async upload({id}, headers, req) {
+		return new Promise(async (resolve, reject) => {
+			const busboy = Busboy({headers});
+			let fileName = (await this.get({id})).name;
+			let fileStreamStarted = false;
 
-		busboy.on("file", (fieldname, fileStream, filename, encoding, mimetype) => {
-			if (fieldname !== "file") return;
 
-			const uploadStream = got.stream.post(`https://api.infomaniak.com/v1/media/${id}/upload`, {
-				headers: {
-					"Authorization": `Bearer ${process.env.INFOMANIAK_API_KEY}`,
-					"Content-Type": mimetype,
-					"Content-Length": fileStream.length,
-				},
-			});
-			fileStream.pipe(uploadStream);
-			uploadStream.on("response", (response) => {
-				if (response.statusCode === 200) {
-					console.log("File uploaded successfully");
-				} else {
-					console.error("Error uploading file:", response.statusCode);
+			busboy.on("file", (fieldname, fileStream, filename, encoding, mimetype) => {
+				if (fieldname !== "file") {
+					fileStream.resume();
+					return;
 				}
-			});
-			uploadStream.on("error", (error) => {
-				console.error("Error uploading file:", error);
-			});
-		});
+				fileStreamStarted = true;
 
+				const form = new FormData();
+				const userAgent = req.headers['user-agent'] || 'Node.js/stream-proxy';
+				form.append("client", "http");
+				form.append("http_user_agent", userAgent);
+				form.append("name", fileName || filename);
+				form.append("folder", "1jijk03u2ilwj");
+
+				const passThrough = new PassThrough();
+				let transferredBytes = 0;
+
+				passThrough.on('data', (chunk) => {
+					transferredBytes += chunk.length;
+					count++;
+					if (count % 100 === 0) {
+						console.log(`Transferred: ${transferredBytes / 1024 / 1024} MB (buffer: ${passThrough.readableLength})`);
+					}
+					if (passThrough.readableLength >= MAX_BUFFER_SIZE) {
+						if (!fileStream.isPaused()) {
+							fileStream.pause();
+						}
+					} else if (fileStream.isPaused() && passThrough.readableLength < RESUME_BUFFER_SIZE) {
+						fileStream.resume();
+					}
+				});
+
+				form.append("file", passThrough, {filename: fileName || filename, contentType: mimetype});
+
+				const uploadUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/upload`;
+				const formHeaders = form.getHeaders({
+					Authorization: `Bearer ${infomaniak.apiKey}`,
+				});
+
+				fetch(uploadUrl, {
+					method: "POST",
+					headers: formHeaders,
+					body: form,
+				})
+						.then(async (apiRes) => {
+							if (!apiRes.ok) {
+								const err = await apiRes.text();
+								reject(new Error(`Error uploading file: ${apiRes.status} ${apiRes.statusText} - ${err}`));
+								return;
+							}
+							console.log(await apiRes.json());
+							resolve({status: "success"});
+						})
+						.catch(reject);
+
+				pipeline(fileStream, passThrough, (err) => {
+					if (err) reject(err);
+				});
+			});
+
+			busboy.on("finish", () => {
+				if (!fileStreamStarted) reject(new Error("No file received"));
+			});
+
+			req.pipe(busboy);
+		});
 	}
 
 	/**

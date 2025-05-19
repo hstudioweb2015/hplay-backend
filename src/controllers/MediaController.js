@@ -44,7 +44,7 @@ export default class MediaController {
 
 	static async uploadMedia(req, res, next) {
 		try {
-			const response = await MediaService.upload(req.file);
+			const response = await MediaService.upload(req.body, req.headers, req);
 			res.status(200).json(response);
 		} catch (error) {
 			next(error);

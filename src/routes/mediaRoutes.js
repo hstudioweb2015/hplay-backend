@@ -40,9 +40,12 @@ router.post("/",
 		MediaController.createMedia
 )
 
-router.post(":id/upload",
+router.post("/:id/upload",
 		authenticateToken,
 		adminSecurity,
+		validateRequest({
+			id: {type: "string", required: true},
+		}),
 		MediaController.uploadMedia
 );
 
