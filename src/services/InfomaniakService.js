@@ -45,16 +45,13 @@ export default class InfomaniakService extends PlayerService {
 		return "https://player.vod2.infomaniak.com/embed/" + shareId + "?" + token;
 	}
 	
-	static async getUploadData() {
+	static getUploadData() {
 		return {
 			"url": `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/upload`,
 			"headers": {
 				"Authorization": `Bearer ${infomaniak.apiKey}`,
 			},
 		}
-	}
-
-	static async uploadMedia(fileStream, fileName, userAgent) {
 	}
 
 	static async publishMedia(mediaId) {

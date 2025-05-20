@@ -205,14 +205,11 @@ export default class MediaService {
 
 				form.append("file", passThrough, fileData);
 
-				const uploadUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/upload`;
-				const formHeaders = form.getHeaders({
-					Authorization: `Bearer ${infomaniak.apiKey}`,
-				});
+				const uploadData = InfomaniakService.getUploadData();
 
-				fetch(uploadUrl, {
+				fetch(uploadData.url, {
 					method: "POST",
-					headers: formHeaders,
+					headers: uploadData.headers,
 					body: form,
 				})
 						.then(async (apiRes) => {
@@ -228,64 +225,10 @@ export default class MediaService {
 								return;
 							}
 							const infomaniakId = response.data.id;
-
-							//update media to published
-							const publishUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${infomaniakId}`;
-							const publishHeaders = {
-								Authorization: `Bearer ${infomaniak.apiKey}`,
-								'Content-Type': 'application/json'
-							};
-							const publishBody = {
-								"published": 1
-							}
-							const publishRes = await fetch(publishUrl, {
-								method: "PUT",
-								headers: publishHeaders,
-								body: JSON.stringify(publishBody),
-							});
-							if (!publishRes.ok) {
-								const err = await publishRes.text();
-								reject(new Error(`Error publishing file: ${publishRes.status} ${publishRes.statusText} - ${err}`));
-								return;
-							}
-							const shareUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/share`;
-							const shareHeaders = {
-								Authorization: `Bearer ${infomaniak.apiKey}`,
-								'Content-Type': 'application/json'
-							};
-							while (true) {
-								await new Promise(resolve => setTimeout(resolve, 5000));
-								const checkRes = await fetch(`https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${infomaniakId}`, {
-									headers: shareHeaders,
-								});
-								if (!checkRes.ok) {
-									const err = await checkRes.text();
-									reject(new Error(`Error checking upload status: ${checkRes.status} ${checkRes.statusText} - ${err}`));
-									return;
-								}
-								const checkJson = await checkRes.json();
-								if (checkJson.data.encoded_medias.length > 0) {
-									break;
-								}
-							}
-							const shareRes = await fetch(shareUrl, {
-								method: "POST",
-								headers: shareHeaders,
-								body: JSON.stringify(
-										{
-											target: infomaniakId,
-											player: infomaniak.playerId,
-										}
-								),
-								redirect: "follow",
-							});
-							if (!shareRes.ok) {
-								const err = await shareRes.text();
-								reject(new Error(`Error creating share: ${shareRes.status} ${shareRes.statusText} - ${err}`));
-								return;
-							}
-							const shareJson = await shareRes.json();
-							const shareId = shareJson.data.id;
+							await InfomaniakService.publishMedia(infomaniakId);
+							await InfomaniakService.waitForEncoding(infomaniakId);
+							const shareId = await InfomaniakService.createShare(infomaniakId);
+							
 							const sql = `UPDATE medias
                            SET share_id = ?
                            WHERE id = ?`;
