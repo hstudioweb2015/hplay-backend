@@ -6,11 +6,7 @@ import FormData from "form-data";
 import {PassThrough, pipeline} from "stream";
 import fetch from "node-fetch";
 import Busboy from "busboy";
-import {infomaniak} from "../configs/config.js";
-
-const MAX_BUFFER_SIZE = 50 * 1024 * 1024; // 50 Mo
-const RESUME_BUFFER_SIZE = 40 * 1024 * 1024; // 40 Mo
-let count = 0;
+import {infomaniak, uploadMaxBufferSize} from "../configs/config.js";
 
 export default class MediaService {
 
@@ -129,15 +125,51 @@ export default class MediaService {
 	}
 
 	static async create({name, description, price, tags, available = 1}) {
+		const sql = `INSERT INTO medias (name, description, price, available)
+                 VALUES (?, ?, ?, ?)`;
+		const params = [name, description, price, available];
+		const result = await DBService.query(sql, params);
+		const mediaId = result.insertId;
 
+		// get tags id or create them if they don't exist
+		const tagIds = [];
+		for (const tag of tags) {
+			const tagSql = `SELECT id
+                      FROM tags
+                      WHERE name = ?`;
+			const tagParams = [tag];
+			let tagResult = await DBService.query(tagSql, tagParams);
+			if (tagResult.length === 0) {
+				const insertTagSql = `INSERT INTO tags (name)
+                              VALUES (?)`;
+				const insertTagParams = [tag];
+				tagResult = await DBService.query(insertTagSql, insertTagParams);
+				tagIds.push(tagResult.insertId);
+			} else {
+				tagIds.push(tagResult[0].id);
+			}
+		}
+
+		// insert tags into medias_has_tags
+		const sqlInsertTags = `INSERT INTO medias_has_tags (media_id, tag_id)
+                           VALUES (?, ?)`;
+		for (const tagId of tagIds) {
+			const params = [mediaId, tagId];
+			await DBService.query(sqlInsertTags, params);
+		}
+
+		return this.get({id: mediaId});
 	}
 
 	static async upload({id}, headers, req) {
+		let count = 0;
+		const maxBufferSize = uploadMaxBufferSize * 1024 * 1024;
+		const resumeBufferSize = maxBufferSize * 0.8; // 80% du buffer
+
 		return new Promise(async (resolve, reject) => {
 			const busboy = Busboy({headers});
 			let fileName = (await this.get({id})).name;
 			let fileStreamStarted = false;
-
 
 			busboy.on("file", (fieldname, fileStream, filename, encoding, mimetype) => {
 				if (fieldname !== "file") {
@@ -151,7 +183,7 @@ export default class MediaService {
 				form.append("client", "http");
 				form.append("http_user_agent", userAgent);
 				form.append("name", fileName || filename);
-				form.append("folder", "1jijk03u2ilwj");
+				form.append("folder", infomaniak.folderId);
 
 				const passThrough = new PassThrough();
 				let transferredBytes = 0;
@@ -162,11 +194,11 @@ export default class MediaService {
 					if (count % 100 === 0) {
 						console.log(`Transferred: ${transferredBytes / 1024 / 1024} MB (buffer: ${passThrough.readableLength})`);
 					}
-					if (passThrough.readableLength >= MAX_BUFFER_SIZE) {
+					if (passThrough.readableLength >= maxBufferSize) {
 						if (!fileStream.isPaused()) {
 							fileStream.pause();
 						}
-					} else if (fileStream.isPaused() && passThrough.readableLength < RESUME_BUFFER_SIZE) {
+					} else if (fileStream.isPaused() && passThrough.readableLength < resumeBufferSize) {
 						fileStream.resume();
 					}
 				});
@@ -189,7 +221,76 @@ export default class MediaService {
 								reject(new Error(`Error uploading file: ${apiRes.status} ${apiRes.statusText} - ${err}`));
 								return;
 							}
-							console.log(await apiRes.json());
+							const json = await apiRes.json();
+							if (!json.data || !json.data.id) {
+								console.error('Upload response missing data.id:', json);
+								reject(new Error('Upload succeeded but no file id returned by Infomaniak.'));
+								return;
+							}
+							const infomaniakId = json.data.id;
+
+							//update media to published
+							const publishUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${infomaniakId}`;
+							const publishHeaders = {
+								Authorization: `Bearer ${infomaniak.apiKey}`,
+								'Content-Type': 'application/json'
+							};
+							const publishBody = {
+								"published": 1
+							}
+							const publishRes = await fetch(publishUrl, {
+								method: "PUT",
+								headers: publishHeaders,
+								body: JSON.stringify(publishBody),
+							});
+							if (!publishRes.ok) {
+								const err = await publishRes.text();
+								reject(new Error(`Error publishing file: ${publishRes.status} ${publishRes.statusText} - ${err}`));
+								return;
+							}
+							const shareUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/share`;
+							const shareHeaders = {
+								Authorization: `Bearer ${infomaniak.apiKey}`,
+								'Content-Type': 'application/json'
+							};
+							while (true) {
+								await new Promise(resolve => setTimeout(resolve, 5000));
+								const checkRes = await fetch(`https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${infomaniakId}`, {
+									headers: shareHeaders,
+								});
+								if (!checkRes.ok) {
+									const err = await checkRes.text();
+									reject(new Error(`Error checking upload status: ${checkRes.status} ${checkRes.statusText} - ${err}`));
+									return;
+								}
+								const checkJson = await checkRes.json();
+								if (checkJson.data.encoded_medias.length > 0) {
+									break;
+								}
+							}
+							const shareRes = await fetch(shareUrl, {
+								method: "POST",
+								headers: shareHeaders,
+								body: JSON.stringify(
+										{
+											target: infomaniakId,
+											player: "1jhvl2uqfru9k"
+										}
+								),
+								redirect: "follow",
+							});
+							if (!shareRes.ok) {
+								const err = await shareRes.text();
+								reject(new Error(`Error creating share: ${shareRes.status} ${shareRes.statusText} - ${err}`));
+								return;
+							}
+							const shareJson = await shareRes.json();
+							const shareId = shareJson.data.id;
+							const sql = `UPDATE medias
+                           SET share_id = ?
+                           WHERE id = ?`;
+							const params = [shareId, id];
+							await DBService.query(sql, params);
 							resolve({status: "success"});
 						})
 						.catch(reject);
