@@ -1,6 +1,6 @@
 import DBService from "./DBService.js";
 import MediaError from "../errors/MediaError.js";
-import InfomaniakPlayerService from "./InfomaniakPlayerService.js";
+import InfomaniakService from "./InfomaniakService.js";
 import Media from "../models/Media.js";
 import FormData from "form-data";
 import {PassThrough, pipeline} from "stream";
@@ -171,7 +171,7 @@ export default class MediaService {
 			let fileName = (await this.get({id})).name;
 			let fileStreamStarted = false;
 
-			busboy.on("file", (fieldname, fileStream, filename, encoding, mimetype) => {
+			busboy.on("file", (fieldname, fileStream, fileData) => {
 				if (fieldname !== "file") {
 					fileStream.resume();
 					return;
@@ -182,7 +182,7 @@ export default class MediaService {
 				const userAgent = req.headers['user-agent'] || 'Node.js/stream-proxy';
 				form.append("client", "http");
 				form.append("http_user_agent", userAgent);
-				form.append("name", fileName || filename);
+				form.append("name", fileName);
 				form.append("folder", infomaniak.folderId);
 
 				const passThrough = new PassThrough();
@@ -203,7 +203,7 @@ export default class MediaService {
 					}
 				});
 
-				form.append("file", passThrough, {filename: fileName || filename, contentType: mimetype});
+				form.append("file", passThrough, fileData);
 
 				const uploadUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/upload`;
 				const formHeaders = form.getHeaders({
@@ -221,13 +221,13 @@ export default class MediaService {
 								reject(new Error(`Error uploading file: ${apiRes.status} ${apiRes.statusText} - ${err}`));
 								return;
 							}
-							const json = await apiRes.json();
-							if (!json.data || !json.data.id) {
-								console.error('Upload response missing data.id:', json);
+							const response = await apiRes.json();
+							if (!response.data || !response.data.id) {
+								console.error('Upload response missing data.id:', response);
 								reject(new Error('Upload succeeded but no file id returned by Infomaniak.'));
 								return;
 							}
-							const infomaniakId = json.data.id;
+							const infomaniakId = response.data.id;
 
 							//update media to published
 							const publishUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${infomaniakId}`;
@@ -274,7 +274,7 @@ export default class MediaService {
 								body: JSON.stringify(
 										{
 											target: infomaniakId,
-											player: "1jhvl2uqfru9k"
+											player: infomaniak.playerId,
 										}
 								),
 								redirect: "follow",
@@ -322,7 +322,7 @@ export default class MediaService {
 		const params = [id];
 		const result = await DBService.query(sql, params);
 		return {
-			url: await InfomaniakPlayerService.generateEmbedUrl(result[0].shareId),
+			url: await InfomaniakService.generateEmbedUrl(result[0].shareId),
 		}
 	}
 

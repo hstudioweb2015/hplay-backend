@@ -19,6 +19,7 @@ export const infomaniak = {
 	allowedDomain: process.env.INFOMANIAK_ALLOWED_DOMAIN || null,
 	tokenDuration: process.env.INFOMANIAK_TOKEN_DURATION || 30,
 	folderId: process.env.INFOMANIAK_FOLDER_ID || '',
+	playerId: process.env.INFOMANIAK_PLAYER_ID || '',
 }
 export const corsOrigin = process.env.CORS_ORIGIN || '*';
 
