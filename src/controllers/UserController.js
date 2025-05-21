@@ -88,4 +88,19 @@ export default class UserController {
 			next(error);
 		}
 	}
+
+	static async verifyToken(req, res, next) {
+		if (!req.user) {
+			return res.status(401).json({message: "Unauthorized"});
+		}
+		try {
+			const user = await UserService.getById({id: req.user.id});
+			if (!user) {
+				return res.status(401).json({message: "Unauthorized"});
+			}
+			res.status(200).json(user);
+		} catch (error) {
+			next(error);
+		}
+	}
 }

@@ -25,6 +25,11 @@ router.post("/login",
 		UserController.loginUser
 );
 
+router.get("/verify-token",
+		authenticateToken,
+		UserController.verifyToken
+);
+
 // get user by id
 router.get("/:id",
 		authenticateToken,
