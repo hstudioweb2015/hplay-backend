@@ -226,13 +226,16 @@ export default class MediaService {
 							}
 							const infomaniakId = response.data.id;
 							await InfomaniakService.publishMedia(infomaniakId);
+							await new Promise(resolve => setTimeout(resolve, 5000));
 							await InfomaniakService.waitForEncoding(infomaniakId);
 							const shareId = await InfomaniakService.createShare(infomaniakId);
-							
+							const previewUrl = await InfomaniakService.getThumbnail(infomaniakId);
+
 							const sql = `UPDATE medias
-                           SET share_id = ?
+                           SET share_id = ?,
+                               preview  = ?
                            WHERE id = ?`;
-							const params = [shareId, id];
+							const params = [shareId, previewUrl, id];
 							await DBService.query(sql, params);
 							resolve({status: "success"});
 						})

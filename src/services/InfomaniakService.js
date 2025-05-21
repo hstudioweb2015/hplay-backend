@@ -44,7 +44,7 @@ export default class InfomaniakService extends PlayerService {
 		const token = (await response.json()).data;
 		return "https://player.vod2.infomaniak.com/embed/" + shareId + "?" + token;
 	}
-	
+
 	static getUploadData() {
 		return {
 			"url": `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/upload`,
@@ -57,7 +57,6 @@ export default class InfomaniakService extends PlayerService {
 	static async publishMedia(mediaId) {
 		const publishUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}`;
 		const headers = {
-			Authorization: `Bearer ${infomaniak.apiKey}`,
 			Authorization: `Bearer ${infomaniak.apiKey}`,
 			"Content-Type": "application/json",
 		};
@@ -94,6 +93,22 @@ export default class InfomaniakService extends PlayerService {
 				break;
 			}
 		}
+	}
+
+	static async getThumbnail(mediaId) {
+		const thumbnailUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}/thumbnail`;
+		const headers = {
+			Authorization: `Bearer ${infomaniak.apiKey}`,
+		};
+
+		const response = await fetch(thumbnailUrl, {headers});
+		if (!response.ok) {
+			const error = await response.text();
+			throw new Error(`Error getting thumbnail: ${response.status} ${response.statusText} - ${error}`);
+		}
+
+		const responseData = await response.json();
+		return responseData.data.link.url;
 	}
 
 	static async createShare(mediaId) {
