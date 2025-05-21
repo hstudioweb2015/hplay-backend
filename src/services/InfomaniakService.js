@@ -4,6 +4,8 @@ import {DateTime} from "luxon";
 import fetch from "node-fetch";
 import FormData from "form-data";
 import {PassThrough} from "stream";
+import * as url from "node:url";
+import MediaError from "../errors/MediaError.js";
 
 export default class InfomaniakService extends PlayerService {
 
@@ -27,24 +29,16 @@ export default class InfomaniakService extends PlayerService {
 			"strategy": "HLS",
 			"end_time": endTime,
 		}
-		const headers = {
-			"Authorization": `Bearer ${infomaniak.apiKey}`,
-			"Content-Type": "application/json"
-		}
-		const response = await fetch(url, {
-			method: "POST",
-			headers: headers,
-			body: JSON.stringify(body),
-			redirect: "follow"
-		});
-		if (!response.ok) {
-			console.error(response);
-			throw new Error("Failed to generate embed URL");
-		}
-		const token = (await response.json()).data;
+
+		const response = await this.query(url, "POST", body);
+		const token = response.data;
 		return "https://player.vod2.infomaniak.com/embed/" + shareId + "?" + token;
 	}
 
+	/**
+	 * Upload a media file to Infomaniak
+	 * @returns {Promise<Object>} - The url and headers for the upload
+	 */
 	static getUploadData() {
 		return {
 			"url": `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/upload`,
@@ -54,86 +48,99 @@ export default class InfomaniakService extends PlayerService {
 		}
 	}
 
+	/**
+	 * Update the media to published state
+	 * @param mediaId {String} - The ID of the media
+	 * @returns {Promise<void>}
+	 */
 	static async publishMedia(mediaId) {
-		const publishUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}`;
-		const headers = {
-			Authorization: `Bearer ${infomaniak.apiKey}`,
-			"Content-Type": "application/json",
-		};
+		const url = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}`;
 		const body = {published: 1};
+		await this.query(url, "PUT", body);
+	}
 
-		const response = await fetch(publishUrl, {
-			method: "PUT",
-			headers,
-			body: JSON.stringify(body),
-		});
-
-		if (!response.ok) {
-			const error = await response.text();
-			throw new Error(`Error publishing file: ${response.status} ${response.statusText} - ${error}`);
+	/**
+	 * Wait for the encoding to finish
+	 * @param mediaId {String} - The ID of the media
+	 * @returns {Promise<void>} - Resolves when encoding is started
+	 */
+	static async waitForEncoding(mediaId) {
+		const url = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}`;
+		let tryCount = 0;
+		while (true) {
+			try {
+				const response = await this.query(url);
+				if (response.data.encoded_medias.length > 0) {
+					break;
+				}
+				await new Promise(resolve => setTimeout(resolve, 5000));
+			} catch (error) {
+				if (error.message.includes("not found")) {
+					throw new MediaError("Media not found", 404);
+				}
+				if (tryCount >= 5) {
+					throw new Error("Encoding timeout");
+				}
+				tryCount++;
+				await new Promise(resolve => setTimeout(resolve, 5000));
+			}
 		}
 	}
 
-	static async waitForEncoding(mediaId) {
-		const checkUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}`;
-		const headers = {
-			Authorization: `Bearer ${infomaniak.apiKey}`,
-		};
-
+	/**
+	 * Get the media information
+	 * @param mediaId {String} - The ID of the media
+	 * @returns {Promise<String>} - The thumbnail URL of the media
+	 */
+	static async getThumbnail(mediaId) {
+		const url = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}/thumbnail`;
+		let tryCount = 0;
 		while (true) {
 			await new Promise(resolve => setTimeout(resolve, 5000));
-			const response = await fetch(checkUrl, {headers});
-			if (!response.ok) {
-				const error = await response.text();
-				throw new Error(`Error checking encoding status: ${response.status} ${response.statusText} - ${error}`);
-			}
+			const response = await this.query(url, "GET");
+			const thumbnail = response.data.link.url;
 
-			const responseData = await response.json();
-			if (responseData.data.encoded_medias.length > 0) {
-				break;
+			// Check if the thumbnail url responds with a 200 status code
+			const thumbnailResponse = await fetch(thumbnail);
+			if (!thumbnailResponse.ok) {
+				tryCount++;
+				if (tryCount >= 5) {
+					throw new MediaError("Thumbnail timeout", 500);
+				}
+			} else {
+				return thumbnail;
 			}
 		}
-	}
 
-	static async getThumbnail(mediaId) {
-		const thumbnailUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}/thumbnail`;
-		const headers = {
-			Authorization: `Bearer ${infomaniak.apiKey}`,
-		};
-
-		const response = await fetch(thumbnailUrl, {headers});
-		if (!response.ok) {
-			const error = await response.text();
-			throw new Error(`Error getting thumbnail: ${response.status} ${response.statusText} - ${error}`);
-		}
-
-		const responseData = await response.json();
-		return responseData.data.link.url;
 	}
 
 	static async createShare(mediaId) {
-		const shareUrl = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/share`;
-		const headers = {
-			Authorization: `Bearer ${infomaniak.apiKey}`,
-			"Content-Type": "application/json",
-		};
+		const url = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/share`;
 		const body = {
 			target: mediaId,
 			player: infomaniak.playerId,
 		};
+		const response = await this.query(url, "POST", body);
+		return response.data.id;
+	}
 
-		const response = await fetch(shareUrl, {
-			method: "POST",
+	static async query(url, method = "GET", body = null) {
+		const headers = {
+			"Authorization": `Bearer ${infomaniak.apiKey}`,
+			"Content-Type": "application/json",
+		};
+		const options = {
+			method,
 			headers,
-			body: JSON.stringify(body),
-		});
-
+		};
+		if (body) {
+			options.body = JSON.stringify(body);
+		}
+		const response = await fetch(url, options);
 		if (!response.ok) {
 			const error = await response.text();
-			throw new Error(`Error creating share: ${response.status} ${response.statusText} - ${error}`);
+			throw new Error(`Error querying Infomaniak API: ${response.status} ${response.statusText} - ${error}`);
 		}
-
-		const responseData = await response.json();
-		return responseData.data.id;
+		return await response.json();
 	}
 }

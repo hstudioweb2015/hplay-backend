@@ -124,6 +124,15 @@ export default class MediaService {
 		return result;
 	}
 
+	/**
+	 * Create a new media
+	 * @param name {String} - Media name
+	 * @param description {String} - Media description
+	 * @param price {Number} - Media price (in cents)
+	 * @param tags {Array} - Array of tags
+	 * @param available {Integer} - Number of available copies
+	 * @returns {Promise<Media>} - Media object
+	 */
 	static async create({name, description, price, tags, available = 1}) {
 		const sql = `INSERT INTO medias (name, description, price, available)
                  VALUES (?, ?, ?, ?)`;
@@ -161,6 +170,13 @@ export default class MediaService {
 		return this.get({id: mediaId});
 	}
 
+	/**
+	 * Upload a file to Infomaniak
+	 * @param id {Integer} - Media id
+	 * @param headers {Object} - Request headers
+	 * @param req {Object} - Request object
+	 * @returns {Promise<{status: string}>} - Upload status
+	 */
 	static async upload({id}, headers, req) {
 		let count = 0;
 		const maxBufferSize = uploadMaxBufferSize * 1024 * 1024;
@@ -226,7 +242,6 @@ export default class MediaService {
 							}
 							const infomaniakId = response.data.id;
 							await InfomaniakService.publishMedia(infomaniakId);
-							await new Promise(resolve => setTimeout(resolve, 5000));
 							await InfomaniakService.waitForEncoding(infomaniakId);
 							const shareId = await InfomaniakService.createShare(infomaniakId);
 							const previewUrl = await InfomaniakService.getThumbnail(infomaniakId);
