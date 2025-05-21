@@ -44,6 +44,18 @@ export default class TagService {
 		}
 		return Object.assign(new Tag(), result[0]);
 	}
+	
+	static async getByName({name}) {
+		const sql = `SELECT id, name
+								 FROM tags
+								 WHERE name = ?`;
+		const params = [name];
+		const result = await DBService.query(sql, params);
+		if (result.length === 0) {
+			throw new TagError("Tag not found", 404);
+		}
+		return Object.assign(new Tag(), result[0]);
+	}
 
 	/**
 	 * Update a tag
@@ -94,5 +106,12 @@ export default class TagService {
 			throw new TagError("Tag not found", 404);
 		}
 		return {message: "Tag deleted"};
+	}
+
+	static async associateTagWithMedia(mediaId, tagId) {
+		const sql = `INSERT INTO medias_has_tags (media_id, tag_id)
+                 VALUES (?, ?)`;
+		const params = [mediaId, tagId];
+		await DBService.query(sql, params);
 	}
 }
