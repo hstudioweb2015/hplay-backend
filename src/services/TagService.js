@@ -44,11 +44,11 @@ export default class TagService {
 		}
 		return Object.assign(new Tag(), result[0]);
 	}
-	
+
 	static async getByName({name}) {
 		const sql = `SELECT id, name
-								 FROM tags
-								 WHERE name = ?`;
+                 FROM tags
+                 WHERE name = ?`;
 		const params = [name];
 		const result = await DBService.query(sql, params);
 		if (result.length === 0) {
@@ -67,7 +67,7 @@ export default class TagService {
 		const sql = `UPDATE tags
                  SET name = ?
                  WHERE id = ?`;
-		const params = [name, id];
+		const params = [name.trim(), id];
 		let response;
 		try {
 			response = await DBService.query(sql, params);
@@ -89,6 +89,7 @@ export default class TagService {
 	 * @returns {Promise<{message: string}>}
 	 */
 	static async delete({id}) {
+		await this.removeTagFromAllMedia(id);
 		const sql = `DELETE
                  FROM tags
                  WHERE id = ?`;
@@ -97,9 +98,6 @@ export default class TagService {
 		try {
 			response = await DBService.query(sql, params);
 		} catch (error) {
-			if (error.code === "ER_ROW_IS_REFERENCED_2") {
-				throw new TagError("Tag is used in a media", 409);
-			}
 			throw error;
 		}
 		if (response.affectedRows === 0) {
@@ -108,10 +106,27 @@ export default class TagService {
 		return {message: "Tag deleted"};
 	}
 
-	static async associateTagWithMedia(mediaId, tagId) {
+	static async addTagWithMedia(mediaId, tagId) {
 		const sql = `INSERT INTO medias_has_tags (media_id, tag_id)
                  VALUES (?, ?)`;
 		const params = [mediaId, tagId];
+		await DBService.query(sql, params);
+	}
+
+	static async removeTagFromMedia(mediaId, tagId) {
+		const sql = `DELETE
+                 FROM medias_has_tags
+                 WHERE media_id = ?
+                   AND tag_id = ?`;
+		const params = [mediaId, tagId];
+		await DBService.query(sql, params);
+	}
+
+	static async removeTagFromAllMedia(tagId) {
+		const sql = `DELETE
+                 FROM medias_has_tags
+                 WHERE tag_id = ?`;
+		const params = [tagId];
 		await DBService.query(sql, params);
 	}
 }

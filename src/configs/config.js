@@ -29,4 +29,13 @@ export const zahls = {
 	tva: process.env.ZAHLS_TVA || 0,
 }
 
+export const mailer = {
+	host: process.env.MAIL_HOST || 'localhost',
+	port: process.env.MAIL_PORT || 25,
+	secure: process.env.MAIL_SECURE === 'true' || false,
+	user: process.env.MAIL_USER || '',
+	password: process.env.MAIL_PASSWORD || '',
+	from: process.env.MAIL_FROM || 'no-reply@localhost',
+}
+
 export const uploadMaxBufferSize = process.env.UPLOAD_MAX_BUFFER_SIZE * 1024 * 1024 || 100 * 1024 * 1024; // 100 MB

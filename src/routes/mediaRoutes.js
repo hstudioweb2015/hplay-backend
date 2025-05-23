@@ -3,7 +3,9 @@ import MediaController from "../controllers/MediaController.js";
 import validateRequest from "../middlewares/validateRequest.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
 import adminSecurity from "./../middlewares/adminSecurity.js";
+import multer from "multer";
 
+const upload = multer({dest: 'uploads/'});
 const router = express.Router();
 
 // Search for medias
@@ -27,6 +29,29 @@ router.get("/:id",
 		MediaController.getMediaById
 );
 
+router.put("/:id",
+		authenticateToken,
+		adminSecurity,
+		validateRequest({
+			id: {type: "string", required: true},
+			name: {type: "string", required: true},
+			description: {type: "string", required: true},
+			price: {type: "number", required: true},
+			tags: {type: "object", required: true},
+			available: {type: "boolean", required: false},
+		}),
+		MediaController.updateMedia
+);
+
+router.delete("/:id",
+		authenticateToken,
+		adminSecurity,
+		validateRequest({
+			id: {type: "string", required: true},
+		}),
+		MediaController.deleteMedia
+);
+
 router.post("/",
 		authenticateToken,
 		adminSecurity,
@@ -47,6 +72,16 @@ router.post("/:id/upload",
 			id: {type: "string", required: true},
 		}),
 		MediaController.uploadMedia
+);
+
+router.post("/:id/thumbnail",
+		upload.single('file'),
+		authenticateToken,
+		adminSecurity,
+		validateRequest({
+			id: {type: "string", required: true},
+		}),
+		MediaController.uploadThumbnail,
 );
 
 // Request a url with unique token to play a media

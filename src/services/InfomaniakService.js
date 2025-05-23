@@ -6,6 +6,7 @@ import FormData from "form-data";
 import {PassThrough} from "stream";
 import * as url from "node:url";
 import MediaError from "../errors/MediaError.js";
+import fs from 'fs/promises';
 
 export default class InfomaniakService extends PlayerService {
 
@@ -114,6 +115,27 @@ export default class InfomaniakService extends PlayerService {
 
 	}
 
+	static async uploadThumbnail(mediaId, file) {
+		const url = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/media/${mediaId}/thumbnail`;
+		const formData = new FormData();
+
+		// Read file from disk
+		const fileData = await fs.readFile(file.path);
+
+		// Append file to form data
+		formData.append("file", fileData, {
+			filename: file.originalname,
+			contentType: file.mimetype,
+			knownLength: file.size
+		});
+
+		const headers = {
+			"Authorization": `Bearer ${infomaniak.apiKey}`
+		};
+
+		return this.query(url, "POST", formData, headers);
+	}
+
 	static async createShare(mediaId) {
 		const url = `https://api.infomaniak.com/1/vod/channel/${infomaniak.channelId}/share`;
 		const body = {
@@ -124,23 +146,32 @@ export default class InfomaniakService extends PlayerService {
 		return response.data.id;
 	}
 
-	static async query(url, method = "GET", body = null) {
-		const headers = {
+	static async query(url, method = "GET", body = null, customHeaders = null) {
+		const headers = customHeaders || {
 			"Authorization": `Bearer ${infomaniak.apiKey}`,
 			"Content-Type": "application/json",
 		};
+
 		const options = {
 			method,
 			headers,
 		};
+
 		if (body) {
-			options.body = JSON.stringify(body);
+			if (body instanceof FormData) {
+				// Let form-data set its own headers
+				options.body = body;
+			} else {
+				options.body = JSON.stringify(body);
+			}
 		}
+
 		const response = await fetch(url, options);
 		if (!response.ok) {
 			const error = await response.text();
 			throw new Error(`Error querying Infomaniak API: ${response.status} ${response.statusText} - ${error}`);
 		}
+
 		return await response.json();
 	}
 }

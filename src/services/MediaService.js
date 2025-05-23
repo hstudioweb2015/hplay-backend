@@ -7,6 +7,14 @@ import {PassThrough, pipeline} from "stream";
 import fetch from "node-fetch";
 import Busboy from "busboy";
 import {infomaniak, uploadMaxBufferSize} from "../configs/config.js";
+import TagService from "./TagService.js";
+import Tag from "../models/Tag.js";
+import http from "http";
+import https from "https";
+
+const MAX_CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_RETRIES = 3;
+const MAX_BUFFER_SIZE = 10 * MAX_CHUNK_SIZE; // 50 MB RAM limit
 
 export default class MediaService {
 
@@ -170,6 +178,47 @@ export default class MediaService {
 		return this.get({id: mediaId});
 	}
 
+	static async update({id, name, description, price, tags, available = true}) {
+		const media = await this.get({id});
+		const sql = `UPDATE medias
+                 SET name        = ?,
+                     description = ?,
+                     price       = ?,
+                     available   = ?
+                 WHERE id = ?`;
+		const params = [name, description, price, available, id];
+		await DBService.query(sql, params);
+
+		const removeTags = media.tags.filter(tag => !tags.includes(tag));
+		for (const tag of removeTags) {
+			const tagId = (await TagService.getByName({name: tag})).id;
+			await TagService.removeTagFromMedia(id, tagId);
+		}
+
+		const addTags = tags.filter(tag => !media.tags.includes(tag));
+		for (const tag of addTags) {
+			let tagId;
+			try {
+				tagId = (await TagService.getByName({name: tag})).id;
+			} catch (e) {
+				tagId = (await TagService.create({name: tag})).id;
+			}
+			await TagService.addTagWithMedia(id, tagId);
+		}
+
+		return this.get({id});
+	}
+
+	static async delete({id}) {
+		await this.get({id});
+		const sql = `UPDATE medias
+                 SET available = 0
+                 WHERE id = ?`;
+		const params = [id];
+		await DBService.query(sql, params);
+		return {message: "Media deleted"};
+	}
+
 	/**
 	 * Upload a file to Infomaniak
 	 * @param id {Integer} - Media id
@@ -247,10 +296,11 @@ export default class MediaService {
 							const previewUrl = await InfomaniakService.getThumbnail(infomaniakId);
 
 							const sql = `UPDATE medias
-                           SET share_id = ?,
-                               preview  = ?
+                           SET share_id      = ?,
+                               preview       = ?,
+                               infomaniak_id = ?
                            WHERE id = ?`;
-							const params = [shareId, previewUrl, id];
+							const params = [shareId, previewUrl, infomaniakId, id];
 							await DBService.query(sql, params);
 							resolve({status: "success"});
 						})
@@ -268,6 +318,19 @@ export default class MediaService {
 			req.pipe(busboy);
 		});
 	}
+
+	static async uploadThumbnail({id}, file) {
+		const infomaniakId = await this.getInfomaniakIdById(id);
+		await InfomaniakService.uploadThumbnail(infomaniakId, file);
+		const previewUrl = await InfomaniakService.getThumbnail(infomaniakId);
+		const sql = `UPDATE medias
+                 SET preview = ?
+                 WHERE id = ?`;
+		const params = [previewUrl, id];
+		await DBService.query(sql, params);
+		return {status: "success"};
+	}
+
 
 	/**
 	 * Request a url with unique token to play a media
@@ -323,6 +386,18 @@ export default class MediaService {
 		const result = await DBService.query(sql, params);
 		if (result.length > 0) {
 			return result.map(media => media.medias_id);
+		}
+		return null;
+	}
+
+	static async getInfomaniakIdById(id) {
+		const sql = `SELECT infomaniak_id
+                 FROM medias
+                 WHERE id = ?`;
+		const params = [id];
+		const result = await DBService.query(sql, params);
+		if (result.length > 0) {
+			return result[0].infomaniak_id;
 		}
 		return null;
 	}

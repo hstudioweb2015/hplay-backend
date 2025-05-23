@@ -1,4 +1,5 @@
 import MediaService from "../services/MediaService.js";
+import fs from "fs";
 
 export default class MediaController {
 	/**
@@ -42,11 +43,49 @@ export default class MediaController {
 		}
 	}
 
+	static async updateMedia(req, res, next) {
+		try {
+			const response = await MediaService.update(req.body);
+			res.status(200).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
+
+	static async deleteMedia(req, res, next) {
+		try {
+			const response = await MediaService.delete(req.body);
+			res.status(200).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
+
 	static async uploadMedia(req, res, next) {
+		req.setTimeout(0);
 		try {
 			const response = await MediaService.upload(req.body, req.headers, req);
 			res.status(200).json(response);
 		} catch (error) {
+			next(error);
+		}
+	}
+
+	static async uploadThumbnail(req, res, next) {
+		try {
+			const response = await MediaService.uploadThumbnail(req.body, req.file);
+			if (req.file) {
+				fs.unlink(req.file.path, (err) => {
+					if (err) throw err;
+				});
+			}
+			res.status(200).json(response);
+		} catch (error) {
+			if (req.file) {
+				fs.unlink(req.file.path, (err) => {
+					if (err) throw err;
+				});
+			}
 			next(error);
 		}
 	}
