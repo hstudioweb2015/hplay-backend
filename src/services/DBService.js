@@ -15,7 +15,7 @@ export default class DBService {
 			try {
 				const result = await connection.query(sql, params);
 				if (returnInsertId) {
-					return result.insertId;
+					return parseInt(result.insertId);
 				} else {
 					return result;
 				}

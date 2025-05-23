@@ -1,6 +1,8 @@
 import User from "../models/User.js";
 import DBService from "./DBService.js";
 import UserError from "../errors/UserError.js";
+import MailerService from "./MailerService.js";
+import {sha256} from "js-sha256";
 
 export default class UserService {
 
@@ -57,6 +59,21 @@ export default class UserService {
 		};
 	}
 
+	static async search({query}) {
+		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin
+                 FROM users
+                 WHERE firstName LIKE ?
+                    OR lastName LIKE ?
+                    OR email LIKE ?
+                 ORDER BY firstName, lastName LIMIT 30`;
+		const params = [`%${query}%`, `%${query}%`, `%${query}%`];
+		const result = await DBService.query(sql, params);
+		if (result.length === 0) {
+			return [];
+		}
+		return result.map(user => new User(user.id, user.firstName, user.lastName, user.email, user.isAdmin));
+	}
+
 	/**
 	 * Get user by id
 	 * @param id {Integer} - User id
@@ -105,6 +122,30 @@ export default class UserService {
 			}
 			throw error;
 		}
+	}
+
+	static async resetPassword({id}) {
+		const user = await UserService.getById({id});
+		//generate a random password
+		const password = Math.random().toString(36).slice(-12);
+		const sql = `UPDATE users
+                 SET password = ?
+                 WHERE id = ?`;
+		const params = [sha256(password), id];
+		await DBService.query(sql, params);
+		const mailer = new MailerService();
+		await mailer.sendMail(
+				user.email,
+				"Password reset",
+				`Hello ${user.firstName} ${user.lastName},\n\nYour password has been reset. Your new password is: ${password}` +
+				`\nPlease change it as soon as possible.` +
+				`\nIf you did not request this change, please contact us immediately.` +
+				`\n\nThank you for using HPlay!` +
+				`\nIf you have any questions, feel free to contact us at` +
+				`\n\nBest regards,` +
+				`\nThe HPlay team`
+		);
+		return {message: "Password reset"};
 	}
 
 	/**

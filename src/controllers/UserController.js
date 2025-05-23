@@ -72,6 +72,16 @@ export default class UserController {
 		}
 	}
 
+	static async resetUserPassword(req, res, next) {
+		if (req.user.id !== req.body.id && !req.user.isAdmin) next(new UserError("Unauthorized", 401));
+		try {
+			let response = await UserService.resetPassword(req.body);
+			res.status(200).json(response);
+		} catch (error) {
+			next(error);
+		}
+	}
+
 	/**
 	 * Delete user
 	 * @param req
@@ -99,6 +109,15 @@ export default class UserController {
 				return res.status(401).json({message: "Unauthorized"});
 			}
 			res.status(200).json(user);
+		} catch (error) {
+			next(error);
+		}
+	}
+
+	static async searchUsers(req, res, next) {
+		try {
+			let response = await UserService.search(req.body);
+			res.status(200).json(response);
 		} catch (error) {
 			next(error);
 		}

@@ -2,6 +2,7 @@ import express from "express";
 import UserController from "../controllers/UserController.js";
 import validateRequest from "../middlewares/validateRequest.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
+import adminSecurity from "../middlewares/adminSecurity.js";
 
 const router = express.Router();
 
@@ -30,6 +31,14 @@ router.get("/verify-token",
 		UserController.verifyToken
 );
 
+router.post("/:id/reset-password",
+		authenticateToken,
+		validateRequest({
+			id: {type: "string", required: true}
+		}),
+		UserController.resetUserPassword
+);
+
 // get user by id
 router.get("/:id",
 		authenticateToken,
@@ -37,6 +46,15 @@ router.get("/:id",
 			id: {type: "string", required: true}
 		}),
 		UserController.getUserById
+);
+
+router.post("/search",
+		authenticateToken,
+		adminSecurity,
+		validateRequest({
+			query: {type: "string", required: false},
+		}),
+		UserController.searchUsers
 );
 
 // update user
