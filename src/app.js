@@ -11,7 +11,10 @@ import path from 'path';
 import {corsOrigin} from "./configs/config.js";
 
 const app = express();
-
+app.use((req, res, next) => {
+	console.log('CORS check:', req.method, req.headers.origin);
+	next();
+});
 app.use(cors({
 	origin: corsOrigin,
 	credentials: true, // Allow credentials

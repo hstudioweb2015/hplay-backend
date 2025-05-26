@@ -1,5 +1,6 @@
 import MediaService from "../services/MediaService.js";
 import fs from "fs";
+import authenticateToken from "../middlewares/authenticateToken.js";
 
 export default class MediaController {
 	/**
@@ -100,9 +101,10 @@ export default class MediaController {
 	static async playMedia(req, res, next) {
 		const media = await MediaService.get(req.body);
 		if (media.price === 0) {
-			req.user = {
-				isAdmin: true
+			if (!req.user) {
+				req.user = {}
 			}
+			req.user.isAdmin = true;
 		}
 		try {
 			const response = await MediaService.play(req.body, req.user);

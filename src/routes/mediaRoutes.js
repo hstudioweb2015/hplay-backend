@@ -5,6 +5,7 @@ import authenticateToken from "../middlewares/authenticateToken.js";
 import adminSecurity from "./../middlewares/adminSecurity.js";
 import multer from "multer";
 import contributorSecurity from "../middlewares/contributorSecurity.js";
+import authenticateTokenIfExist from "../middlewares/authenticateTokenIfExist.js";
 
 const upload = multer({dest: 'uploads/'});
 const router = express.Router();
@@ -89,6 +90,7 @@ router.post("/:id/thumbnail",
 
 // Request a url with unique token to play a media
 router.get("/:id/play",
+		authenticateTokenIfExist,
 		validateRequest({
 			id: {type: "string", required: true},
 		}),
