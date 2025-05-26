@@ -12,15 +12,23 @@ import {corsOrigin} from "./configs/config.js";
 
 const app = express();
 
-app.use(cors({
+const corsMiddleware = cors({
 	origin: corsOrigin,
-	credentials: true, // Allow credentials
+	credentials: true,
 	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-	optionsSuccessStatus: 204, // For legacy browser support
+	optionsSuccessStatus: 204,
 	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
+});
 
-app.options('*', cors());
+app.use(corsMiddleware);
+
+app.use((req, res, next) => {
+	if (req.method === 'OPTIONS') {
+		corsMiddleware(req, res, next);
+	} else {
+		next();
+	}
+});
 
 // Middleware
 app.use(compression());
