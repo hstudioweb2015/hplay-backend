@@ -13,22 +13,14 @@ import {corsOrigin} from "./configs/config.js";
 const app = express();
 
 const corsMiddleware = cors({
-	origin: corsOrigin,
+	origin: corsOrigin, // From your config
 	credentials: true,
-	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+	methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
 	optionsSuccessStatus: 204,
 	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 });
 
 app.use(corsMiddleware);
-
-app.use((req, res, next) => {
-	if (req.method === 'OPTIONS') {
-		corsMiddleware(req, res, next);
-	} else {
-		next();
-	}
-});
 
 // Middleware
 app.use(compression());
