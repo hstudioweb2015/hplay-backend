@@ -15,7 +15,12 @@ const app = express();
 app.use(cors({
 	origin: corsOrigin,
 	credentials: true, // Allow credentials
+	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+	optionsSuccessStatus: 204, // For legacy browser support
+	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+app.options('*', cors());
 
 // Middleware
 app.use(compression());
