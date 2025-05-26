@@ -4,6 +4,7 @@ import validateRequest from "../middlewares/validateRequest.js";
 import authenticateToken from "../middlewares/authenticateToken.js";
 import adminSecurity from "./../middlewares/adminSecurity.js";
 import multer from "multer";
+import contributorSecurity from "../middlewares/contributorSecurity.js";
 
 const upload = multer({dest: 'uploads/'});
 const router = express.Router();
@@ -53,6 +54,7 @@ router.delete("/:id",
 
 router.post("/",
 		authenticateToken,
+		contributorSecurity,
 		adminSecurity,
 		validateRequest({
 			name: {type: "string", required: true},
@@ -66,6 +68,7 @@ router.post("/",
 
 router.post("/:id/upload",
 		authenticateToken,
+		contributorSecurity,
 		adminSecurity,
 		validateRequest({
 			id: {type: "string", required: true},
@@ -76,6 +79,7 @@ router.post("/:id/upload",
 router.post("/:id/thumbnail",
 		upload.single('file'),
 		authenticateToken,
+		contributorSecurity,
 		adminSecurity,
 		validateRequest({
 			id: {type: "string", required: true},

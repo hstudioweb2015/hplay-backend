@@ -41,7 +41,7 @@ export default class UserService {
 	 * @returns {Promise<{jwtToken: {token: string, expire: number}, user: User}>}
 	 */
 	static async login({email, password}) {
-		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin
+		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin, is_contributor as isContributor
                  FROM users
                  WHERE email = ?
                    AND password = ?`;
@@ -50,8 +50,7 @@ export default class UserService {
 		if (result.length === 0) {
 			throw new UserError("Invalid email or password", 401);
 		}
-		const {id, firstName, lastName, isAdmin} = result[0];
-		const user = new User(id, firstName, lastName, email, isAdmin);
+		const user = Object.assign(new User(), result[0]);
 		const jwtToken = user.generateJWT();
 		return {
 			"jwtToken": jwtToken,
@@ -60,7 +59,7 @@ export default class UserService {
 	}
 
 	static async search({query}) {
-		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin
+		const sql = `SELECT id, firstName, lastName, email, is_admin as isAdmin, is_contributor as isContributor
                  FROM users
                  WHERE firstName LIKE ?
                     OR lastName LIKE ?
@@ -71,7 +70,7 @@ export default class UserService {
 		if (result.length === 0) {
 			return [];
 		}
-		return result.map(user => new User(user.id, user.firstName, user.lastName, user.email, user.isAdmin));
+		return result.map(user => Object.assign(new User(), user));
 	}
 
 	/**
@@ -88,8 +87,7 @@ export default class UserService {
 		if (result.length === 0) {
 			throw new UserError("User does not exist", 401);
 		}
-		const {firstName, lastName, email, isAdmin} = result[0];
-		return new User(id, firstName, lastName, email, isAdmin);
+		return Object.assign(new User(), result[0]);
 	}
 
 	/**
@@ -115,7 +113,7 @@ export default class UserService {
 			}
 			params.push(id);
 			await DBService.query(sql, params);
-			return new User(id, firstName, lastName, email);
+			return this.getById({id});
 		} catch (error) {
 			if (error.code === "ER_DUP_ENTRY") {
 				throw new UserError("email already exists", 409);

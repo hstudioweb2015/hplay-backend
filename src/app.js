@@ -12,7 +12,10 @@ import {corsOrigin} from "./configs/config.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+	origin: corsOrigin,
+	credentials: true, // Allow credentials
+}));
 
 // Middleware
 app.use(compression());

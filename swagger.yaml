@@ -593,6 +593,9 @@ definitions:
             isAdmin:
                 type: boolean
                 description: Whether the user is an admin or not.
+            isContributor:
+                type: boolean
+                description: Whether the user is a contributor or not.
     Tag:
         type: object
         properties:

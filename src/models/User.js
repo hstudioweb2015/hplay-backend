@@ -10,13 +10,15 @@ export default class User {
 	 * @param lastName {String} - User last name
 	 * @param email {String} - User email
 	 * @param isAdmin {Boolean} - User is admin
+	 * @param isContributor {Boolean} - User is contributor
 	 */
-	constructor(id, firstName, lastName, email, isAdmin = false) {
+	constructor(id, firstName, lastName, email, isAdmin = false, isContributor = false) {
 		this.id = id;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.email = email;
 		this.isAdmin = isAdmin;
+		this.isContributor = isContributor;
 	}
 
 	/**
@@ -29,7 +31,8 @@ export default class User {
 					{
 						id: this.id.toString(),
 						email: this.email,
-						isAdmin: this.isAdmin
+						isAdmin: this.isAdmin,
+						isContributor: this.isContributor,
 					},
 					jwtSecret,
 					{
