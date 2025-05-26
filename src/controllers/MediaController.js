@@ -98,6 +98,12 @@ export default class MediaController {
 	 * @returns {Promise<void>}
 	 */
 	static async playMedia(req, res, next) {
+		const media = await MediaService.get(req.body);
+		if (media.price === 0) {
+			req.user = {
+				isAdmin: true
+			}
+		}
 		try {
 			const response = await MediaService.play(req.body, req.user);
 			res.status(200).json(response);

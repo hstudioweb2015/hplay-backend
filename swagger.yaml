@@ -134,6 +134,8 @@ paths:
                     description: Bad request
                 500:
                     description: Internal server error
+            security:
+                -   Bearer: [ ]
     /user/{id}:
         get:
             tags:
@@ -230,6 +232,29 @@ paths:
                     description: Bad request
                 500:
                     description: Internal server error
+    /media/{id}:
+        get:
+            tags:
+                - Media
+            summary: Get media by ID
+            description: This endpoint allows you to get media by its ID.
+            parameters:
+                -   name: id
+                    in: path
+                    required: true
+                    type: integer
+                    description: The unique identifier of the media.
+            responses:
+                200:
+                    description: Media found successfully
+                    schema:
+                        $ref: '#/definitions/Media'
+                400:
+                    description: Bad request
+                404:
+                    description: Media not found
+                500:
+                    description: Internal server error
     /media:
         post:
             tags:
@@ -294,31 +319,6 @@ paths:
             responses:
                 200:
                     description: Media uploaded successfully
-                400:
-                    description: Bad request
-                404:
-                    description: Media not found
-                500:
-                    description: Internal server error
-            security:
-                -   Bearer: [ ]
-    /media/{id}:
-        get:
-            tags:
-                - Media
-            summary: Get media by ID
-            description: This endpoint allows you to get media by its ID.
-            parameters:
-                -   name: id
-                    in: path
-                    required: true
-                    type: integer
-                    description: The unique identifier of the media.
-            responses:
-                200:
-                    description: Media found successfully
-                    schema:
-                        $ref: '#/definitions/Media'
                 400:
                     description: Bad request
                 404:

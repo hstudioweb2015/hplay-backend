@@ -22,7 +22,6 @@ router.post("/search",
 
 // Get media by id
 router.get("/:id",
-		authenticateToken,
 		validateRequest({
 			id: {type: "string", required: true},
 		}),
@@ -86,7 +85,6 @@ router.post("/:id/thumbnail",
 
 // Request a url with unique token to play a media
 router.get("/:id/play",
-		authenticateToken,
 		validateRequest({
 			id: {type: "string", required: true},
 		}),

@@ -82,15 +82,25 @@ export default class MediaService {
                            FROM medias m
                                     LEFT JOIN medias_has_tags mt ON m.id = mt.media_id
                                     LEFT JOIN tags t ON mt.tag_id = t.id
-                           WHERE (m.name LIKE ? OR ? IS NULL)
-                             AND m.available = 1
-                               ${hasTags ? "AND (t.name IN (?))" : ""} ${userId ? "AND m.id IN (SELECT media_id FROM medias_has_users WHERE user_id = ?)" : ""}`;
-		const totalCountParams = [`%${name}%`, name];
+                           WHERE m.available = 1
+                               ${name ? "AND (m.name LIKE ?)" : ""} ${userId ? "AND m.id IN (SELECT media_id FROM medias_has_users WHERE user_id = ?)" : ""} ${hasTags ? `AND m.id IN (
+                               SELECT media_id
+                               FROM medias_has_tags mt2
+                               JOIN tags t2 ON mt2.tag_id = t2.id
+                               WHERE t2.name IN (${tags.map(() => '?').join(', ')})
+                               GROUP BY media_id
+                               HAVING COUNT(DISTINCT t2.name) = ?
+                           )` : ""}`;
+
+		const totalCountParams = [];
+		if (name) {
+			totalCountParams.push(`%${name}%`);
+		}
 		if (userId) {
 			totalCountParams.push(userId);
 		}
 		if (hasTags) {
-			totalCountParams.push(tags);
+			totalCountParams.push(...tags, tags.length);
 		}
 
 		const total = (await DBService.query(totalCountSql, totalCountParams))[0].total;
