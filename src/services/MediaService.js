@@ -265,10 +265,6 @@ export default class MediaService {
 
 				passThrough.on('data', (chunk) => {
 					transferredBytes += chunk.length;
-					count++;
-					if (count % 100 === 0) {
-						console.log(`Transferred: ${transferredBytes / 1024 / 1024} MB (buffer: ${passThrough.readableLength})`);
-					}
 					if (passThrough.readableLength >= maxBufferSize) {
 						if (!fileStream.isPaused()) {
 							fileStream.pause();

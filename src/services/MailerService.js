@@ -24,9 +24,7 @@ export default class MailerService {
 				subject,
 				text,
 			};
-			const info = await this.mailer.sendMail(mailOptions);
-			console.log('Message sent: %s', info.messageId);
-			return info;
+			return await this.mailer.sendMail(mailOptions);
 		} catch (error) {
 			console.error('Error sending email:', error);
 			throw new Error('Failed to send email');
