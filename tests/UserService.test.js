@@ -205,6 +205,14 @@ describe('User Service', () => {
 		DBService.query.mockResolvedValueOnce([{id: userId}]);
 		// Mock update
 		DBService.query.mockResolvedValueOnce({affectedRows: 1});
+		// Mock getById to return updated user
+		DBService.query.mockResolvedValueOnce([{
+			id: userId,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			email: user.email,
+			isAdmin: 0
+		}]);
 
 		// When
 		const result = await UserService.update({
@@ -219,7 +227,7 @@ describe('User Service', () => {
 		expect(result).toHaveProperty('firstName', user.firstName);
 		expect(result).toHaveProperty('lastName', user.lastName);
 		expect(result).toHaveProperty('email', user.email);
-		expect(DBService.query).toHaveBeenCalledTimes(2);
+		expect(DBService.query).toHaveBeenCalledTimes(3);
 	});
 
 	it('should update a user with password', async () => {
@@ -231,6 +239,14 @@ describe('User Service', () => {
 		DBService.query.mockResolvedValueOnce([{id: userId}]);
 		// Mock update
 		DBService.query.mockResolvedValueOnce({affectedRows: 1});
+		// Mock getById to return updated user
+		DBService.query.mockResolvedValueOnce([{
+			id: userId,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			email: user.email,
+			isAdmin: 0
+		}]);
 
 		// When
 		const result = await UserService.update({
@@ -243,7 +259,7 @@ describe('User Service', () => {
 
 		// Then
 		expect(result).toHaveProperty('id', userId);
-		expect(DBService.query).toHaveBeenCalledTimes(2);
+		expect(DBService.query).toHaveBeenCalledTimes(3);
 		// Verify password parameter was included
 		const lastCallParams = DBService.query.mock.calls[1][1];
 		expect(lastCallParams).toContain('newPassword');

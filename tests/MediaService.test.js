@@ -243,7 +243,7 @@ describe('Media Service', () => {
 		// When
 		const response = await MediaService.getInfomaniakIdById(999);
 
-		// Then
+		// ThenHPlay
 		expect(response).toBeNull();
 	});
 
